@@ -1,0 +1,170 @@
+params:
+  random_seed: 42
+experiment_type: "deit3b_dataloaders"
+eval_type: "ood_gen"
+results_save_path: <p>
+logging:
+  gdrive_storage_folder: "https://drive.google.com/drive/folders/1bCKbgY29CXsgYSwBHk49weolkA5cBePT?usp=share_link"
+  use_wandb: False
+  use_tb: False
+models:
+
+    deit3b_budget_sizes:
+        fields: ["path", "n_models", "manual_lambda"]
+        model_group_prefix: "deit3b_budget_sizes_"
+        model_paths: "/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-04-26_00:00:43.288023---d5ea0392079ba0ac873d---3056936/checkpoint-epoch_11.pkl	5	0.5
+
+            /home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-05-15_05:32:01.331384---eaf716f86b6c47bd08c6---127413/checkpoint-epoch_11.pkl	2	0.5
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-05-15_05:29:58.282986---bdd873ccf9778299fac8---233651/checkpoint-epoch_11.pkl	3	0.5
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-05-15_23:53:01.033056---9cc02edf095c471ef885---379141/checkpoint-epoch_11.pkl	10	0.5
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-05-15_16:21:23.231328---74637878244a5b479804---3927681/checkpoint-epoch_11.pkl	20	0.5
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-05-15_16:21:53.173824---b27140081621bb71e6c6---1734242/checkpoint-epoch_11.pkl	50	0.5
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-05-15_16:21:15.958207---21301ffaa7a44fbec61f---1205848/checkpoint-epoch_11.pkl	100	0.5
+/home/oh/arubinstein17/github/frozen-diverse-universe/experiments/joint_loss0104/2024-05-17_19:58:05.960666---b86488f5bb4d2fbe2ac9---681227/checkpoint-epoch_11.pkl	4	0.5
+/home/oh/arubinstein17/github/frozen-diverse-universe/experiments/joint_loss0104/2024-05-17_19:58:06.002442---42fe43d1a343ca1086d9---1129813/checkpoint-epoch_11.pkl	6	0.5
+/home/oh/arubinstein17/github/frozen-diverse-universe/experiments/joint_loss0104/2024-05-17_19:58:08.045516---a8b30a13f49676a96d52---739879/checkpoint-epoch_11.pkl	7	0.5
+/home/oh/arubinstein17/github/frozen-diverse-universe/experiments/joint_loss0104/2024-05-17_19:58:06.027304---9fbbd7f01596cfbd28a9---531975/checkpoint-epoch_11.pkl	8	0.5
+/home/oh/arubinstein17/github/frozen-diverse-universe/experiments/joint_loss0104/2024-05-17_19:58:06.025360---190d32a4db3fe269cdc5---531974/checkpoint-epoch_11.pkl	9	0.5
+/home/oh/arubinstein17/github/frozen-diverse-universe/experiments/joint_loss0104/2024-05-17_19:58:06.025102---4a9680f89fcc1dddddf0---531973/checkpoint-epoch_11.pkl	15	0.5
+/home/oh/arubinstein17/github/frozen-diverse-universe/experiments/joint_loss0104/2024-05-17_19:58:15.072835---973207761710d8d52a2c---320484/checkpoint-epoch_11.pkl	25	0.5
+/home/oh/arubinstein17/github/frozen-diverse-universe/experiments/joint_loss0104/2024-05-17_19:58:06.027139---9a270da7f7acc6687201---531976/checkpoint-epoch_11.pkl	75	0.5"
+
+    deit3b_budget_v1:
+        fields: ["path", "lambda", "manual_lambda"]
+        model_group_prefix: deit3b_budget_v1_
+        model_paths: "/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-05-01_00:30:59.484586---ed1c78afafb18254e0be---2509321/checkpoint-epoch_11.pkl	0.5	0
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-04-13_22:27:19.643981---b64f76b645ffa42abfc6---2727591/checkpoint-epoch_11.pkl	0.5	0.0001
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-04-14_00:52:52.246598---0dc94737d93dce2a9ee8---4080577/checkpoint-epoch_11.pkl	0.5	0.1
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-04-14_00:04:36.179825---8f95c5e4b9f9b6f0b341---1537840/checkpoint-epoch_11.pkl	0.5	10
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-04-13_22:33:51.804664---ae2f5049e55f5da2d09a---1068557/checkpoint-epoch_11.pkl	0.5	100
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-04-13_22:07:45.591264---5d74d298fb1f4aca2377---2702405/checkpoint-epoch_11.pkl	0.5	1000
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-04-14_00:59:22.983077---94f73384b6ffc2d775f3---3069943/checkpoint-epoch_11.pkl	0.5	10000
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-04-13_23:35:13.924494---75eec52285654b85efdf---2817169/checkpoint-epoch_11.pkl	0.5	100000
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-04-14_00:38:40.389751---a7e2dd14cbbb5910da7b---1556218/checkpoint-epoch_11.pkl	0.5	1000000
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-04-13_19:28:09.493513---1fdcdee1e9e6d0776f22---1387151/checkpoint-epoch_11.pkl	0.0001	1
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-04-14_00:34:44.742514---fbed4c2cde8b4aee09f6---2893954/checkpoint-epoch_11.pkl	0.01	1
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-04-14_00:34:44.702314---2c183bb1008ef06c2aa1---2893181/checkpoint-epoch_11.pkl	0.5	1
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-04-14_00:40:39.147277---c659ed65cff90498c0d7---3275302/checkpoint-epoch_11.pkl	0.99	1
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-04-13_23:48:22.191296---a7907e41681c3dcba47a---1651358/checkpoint-epoch_11.pkl	0.99999	1
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-04-13_23:40:09.275193---00db89a20c9044d8e743---2500615/checkpoint-epoch_11.pkl	0.9999999	1
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-04-13_21:08:46.494222---52bff4405a0caecda6ea---2622063/checkpoint-epoch_11.pkl	0.99999999	1
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-04-23_14:50:04.704202---6fb7e9159e01572f6e6c---2687844/checkpoint-epoch_11.pkl	0.5	0.5
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-04-23_14:50:04.370347---09b4b5944e50ea91f825---715899/checkpoint-epoch_11.pkl	0.5	2
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-04-23_14:50:10.340447---1b3160049ac89254ed8b---114246/checkpoint-epoch_11.pkl	0.5	3
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-04-23_14:50:04.495169---58c2cb06c274fca541f0---2687842/checkpoint-epoch_11.pkl	0.5	5
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-04-23_14:50:04.299780---bfdd82deab939d9102a6---2687843/checkpoint-epoch_11.pkl	0.5	50
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-04-23_14:50:04.826504---f73ce9acf496fdeeae5e---715898/checkpoint-epoch_11.pkl	0.5	200
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-04-23_14:50:10.210970---81da71f774e02f7545b1---342336/checkpoint-epoch_11.pkl	0.5	500
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-04-23_14:50:10.347923---d5dfbc1125b0e6f79efa---342335/checkpoint-epoch_11.pkl	0.5	2000"
+
+    deit3b_budget_v2:
+        fields: ["path", "lambda", "manual_lambda"]
+        model_group_prefix: deit3b_budget_v2_
+        model_paths: "/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-05-01_00:30:59.612923---99131caacf1dfadc5fdd---2509322/checkpoint-epoch_11.pkl	0.5	0.00E+00
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-04-29_23:49:10.301465---537dbd01618118d495df---1293103/checkpoint-epoch_11.pkl	0.5	0.00001
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-04-29_23:49:09.960764---64b7807a0b05784b1c48---247253/checkpoint-epoch_11.pkl	0.5	1.00E-06
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-04-29_23:49:09.881346---0ce0a79e0c48837e4352---1291992/checkpoint-epoch_11.pkl	0.5	1.00E-07
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-04-29_23:49:09.835591---10ba89521f4ac3e7ef8e---2837639/checkpoint-epoch_11.pkl	0.5	1.00E-08
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-04-29_23:49:09.837488---35af3b813e65eb1b61fb---1206650/checkpoint-epoch_11.pkl	0.5	1.00E-09
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-04-26_00:00:43.293761---1242e2f5faf488d5092a---805359/checkpoint-epoch_11.pkl	0.5	0.0001
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-04-26_01:02:31.771738---fa3f595e7fcc272ebd64---106764/checkpoint-epoch_11.pkl	0.5	0.1
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-04-26_00:00:43.288023---d5ea0392079ba0ac873d---3056936/checkpoint-epoch_11.pkl	0.5	0.5
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-04-26_00:01:49.349162---3d750d293db70392ebcc---21100/checkpoint-epoch_11.pkl	0.5	1
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-04-26_00:00:45.504407---98a49e460476e686080c---800986/checkpoint-epoch_11.pkl	0.5	2
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-04-26_01:00:22.986092---e83f1d90eb296fb941fc---2170694/checkpoint-epoch_11.pkl	0.5	3
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-04-26_00:00:43.016785---25ad3c56a060d3d106d3---2002962/checkpoint-epoch_11.pkl	0.5	5
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-04-26_00:00:43.445432---e37096cb217d58204d52---459220/checkpoint-epoch_11.pkl	0.5	10
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-04-26_01:21:44.705750---6316c55d136d69c21b6c---3373517/checkpoint-epoch_11.pkl	0.5	100
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-04-26_00:43:49.157380---d1a095c0f2eba467251b---2155024/checkpoint-epoch_11.pkl	0.5	50
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-04-26_01:29:27.920247---52b05a953919df8a1157---947169/checkpoint-epoch_11.pkl	0.5	200
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-04-26_00:00:43.282938---7dfe195cb49e0f997d35---799871/checkpoint-epoch_11.pkl	0.5	500
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-04-26_01:05:27.633869---64f9dd8c4394aaf14d52---896632/checkpoint-epoch_11.pkl	0.5	1000
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-04-26_00:00:43.504964---30470937d43648562298---489739/checkpoint-epoch_11.pkl	0.5	2000
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-04-26_01:22:01.611532---5f8801e89616113fb7bf---566129/checkpoint-epoch_11.pkl	0.5	10000
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-04-26_00:00:43.417766---8e111da2d235591ba4c3---2105265/checkpoint-epoch_11.pkl	0.5	100000
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/joint_loss0104/2024-04-26_01:27:11.421218---73dc9bbb7338cd1fcc95---140693/checkpoint-epoch_11.pkl	0.5	1000000"
+
+    deit3b_shallow_ens_v2:
+        fields: null
+        model_group_prefix: deit3b_shallow_ens_v2_
+        model_paths: "/mnt/qb/work/oh/arubinstein17/cache/saved_checkpoints/erm/shallow_ensemble_v2.pkl"
+
+    deit3b_shallow_ens_v2_single:
+        fields: null
+        model_group_prefix: 2105_deit3b_shallow_ens_v2_single_
+        model_paths: "/mnt/lustre/work/oh/arubinstein17/cache/saved_checkpoints/erm/shallow_ensemble_v2_single_as_two_identical.pkl"
+
+    deit3b_vary_hp_v2:
+        fields: null
+        model_group_prefix: deit3b_vary_hp_v2_
+        model_paths: "/mnt/qb/work/oh/arubinstein17/cache/saved_checkpoints/erm/vary_hp_5_v2.pkl"
+
+    deit3b_shallow_ens_v2_50:
+        fields: null
+        model_group_prefix: 2105_2_deit3b_shallow_ens_v2_50_
+        model_paths: "/mnt/lustre/work/oh/arubinstein17/cache/saved_checkpoints/erm/shallow_ensemble_v2_50.pkl"
+
+    deit3b_vary_hp_v2_50:
+        fields: null
+        model_group_prefix: 2105_2_deit3b_vary_hp_v2_50_
+        model_paths: "/mnt/lustre/work/oh/arubinstein17/cache/saved_checkpoints/erm/vary_hp_v2_50.pkl"
+
+
+    deit3b_a2d_inr_:
+        fields: ["path", "manual_lambda"]
+        model_group_prefix: deit3b_a2d_inr_
+        model_paths: "/home/oh/arubinstein17/github_qb/diverse-universe/experiments/Ultimate2604/2024-05-17_01:30:35.679000---e1b6ff27f2a71eb5afa1---1363700/checkpoint-epoch_11.pkl	2
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/Ultimate2604/2024-05-17_00:15:27.497709---3f29b95251c357054030---86947/checkpoint-epoch_11.pkl	2.00E-01
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/Ultimate2604/2024-05-17_00:15:27.143047---e799af6b089531dae2c3---2552169/checkpoint-epoch_11.pkl	2.00E-02
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/Ultimate2604/2024-05-17_00:15:28.856823---2fb39991cfa234a82af7---86946/checkpoint-epoch_11.pkl	2.00E-03
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/Ultimate2604/2024-05-17_00:15:27.127844---7d329e505e1732f597aa---2552168/checkpoint-epoch_11.pkl	2.00E-04
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/Ultimate2604/2024-05-17_00:15:27.158144---4b51c037fff38ebc9127---2688188/checkpoint-epoch_11.pkl	2.00E-05"
+
+    deit3b_div_inr_:
+        fields: ["path", "manual_lambda", "reg_weight"]
+        model_group_prefix: deit3b_div_inr_
+        model_paths: "/home/oh/arubinstein17/github_qb/diverse-universe/experiments/Ultimate2604/2024-05-17_00:15:28.170300---c12015f9eeab580155e8---3292247/checkpoint-epoch_11.pkl	2	1.00E-02
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/Ultimate2604/2024-05-17_00:15:27.186402---1951ab471a785c7a6e12---2479326/checkpoint-epoch_11.pkl	2	1
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/Ultimate2604/2024-05-17_00:15:27.365503---ef41a1e4f446f4e7f5ff---2688189/checkpoint-epoch_11.pkl	2.00E-02	1.00E-02
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/Ultimate2604/2024-05-17_00:15:28.277283---c58f2a909e52d49628b0---1171701/checkpoint-epoch_11.pkl	2.00E-02	1
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/Ultimate2604/2024-05-17_01:30:35.994081---285d72d65d838ebf2318---1357081/checkpoint-epoch_11.pkl	2.00E-05	1.00E-02
+/home/oh/arubinstein17/github_qb/diverse-universe/experiments/Ultimate2604/2024-05-17_00:15:27.802380---754e727bf6f015992a80---2479325/checkpoint-epoch_11.pkl	2.00E-05	1"
+
+    deit3b_div_inr_50_:
+        fields: ["path", "manual_lambda", "reg_weight"]
+        model_group_prefix: 2105_deit3b_div_inr_50_
+        model_paths: "/home/oh/arubinstein17/github/frozen-diverse-universe/experiments/Ultimate2604/2024-05-19_14:41:06.841345---5d2e4dbf2476877d52ed---303315/checkpoint-epoch_11.pkl	2.00E-05	1.00E-02"
+
+    deit3b_a2d_inr_50_:
+        fields: ["path", "manual_lambda"]
+        model_group_prefix: 2105_deit3b_a2d_inr_50_
+        model_paths: "/home/oh/arubinstein17/github/frozen-diverse-universe/experiments/Ultimate2604/2024-05-19_14:41:07.006232---a6d6f9722688bb18c473---122346/checkpoint-epoch_11.pkl	2.00E-04"
+
+    deit3b_budget_batches:
+        fields: ["path", "n_models", "manual_lambda", "batch_size"]
+        model_group_prefix: "2205_deit3b_budget_batches_"
+        model_paths: "/home/oh/arubinstein17/github/frozen-diverse-universe/experiments/joint_loss0104/2024-05-18_00:59:42.863797---7774d2aa038e9b0482f8---2237248/checkpoint-epoch_11.pkl	5	0.5	8
+/home/oh/arubinstein17/github/frozen-diverse-universe/experiments/joint_loss0104/2024-05-18_00:59:43.181299---8312bfafc3d0345afae8---2567352/checkpoint-epoch_11.pkl	5	0.5	16
+/home/oh/arubinstein17/github/frozen-diverse-universe/experiments/joint_loss0104/2024-05-18_00:59:42.771565---d97fe3afe9f6f30f851b---1321337/checkpoint-epoch_11.pkl	5	0.5	64
+/home/oh/arubinstein17/github/frozen-diverse-universe/experiments/joint_loss0104/2024-05-18_00:59:42.137465---6ad720e8d4505639b1cb---1985085/checkpoint-epoch_11.pkl	5	0.5	128
+/home/oh/arubinstein17/github/frozen-diverse-universe/experiments/joint_loss0104/2024-05-18_00:59:42.771689---12614c482f3fcfcd75f9---1321236/checkpoint-epoch_11.pkl	5	0.5	256"
+
+    a2d_50_train_10_:
+        fields: null
+        model_group_prefix: a2d_50_train_10epochs_
+        model_paths: "/home/oh/arubinstein17/github/frozen-diverse-universe/experiments/Ultimate2604/2024-05-21_19:40:50.210021---633bcbef195486a1e597---2195505/latest_checkpoint.pkl"
+
+    div_50_train_9_:
+        fields: null
+        model_group_prefix: div_50_train_9epochs_
+        model_paths: "/home/oh/arubinstein17/github/frozen-diverse-universe/experiments/Ultimate2604/2024-05-21_19:40:53.638568---0d9906fe4259c6111f04---214159/latest_checkpoint.pkl"
+
+    budget_50_best_ood_gen_:
+        fields: null
+        model_group_prefix: budget_50_best_ood_gen_
+        model_paths: "/home/oh/arubinstein17/github/frozen-diverse-universe/experiments/Ultimate2604/2024-05-21_19:46:59.187320---fd723661c4d0f03bffad---217009/checkpoint-epoch_11.pkl"
+
+    budget_single_for_plot_:
+        fields: null
+        model_group_prefix: budget_single_for_plot_
+        model_paths: "/mnt/lustre/work/oh/arubinstein17/cache/saved_checkpoints/erm/shallow_ensemble_v2_single_as_two_identical_2205.pkl"
