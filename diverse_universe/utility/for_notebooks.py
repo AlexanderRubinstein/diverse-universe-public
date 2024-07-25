@@ -33,6 +33,8 @@ from diverse_universe.local_datasets.utils import (
 from diverse_universe.local_models.common import (
     # make_ensemble_from_model_list,
     get_model,
+)
+from diverse_universe.local_models.ensemble import (
     make_ensembles
 )
 from diverse_universe.local_models.wrappers import (

@@ -10,16 +10,20 @@ from stuned.utility.utils import (
     raise_unknown,
     read_json
 )
+from modelvshuman.helper.human_categories import (
+    HumanCategories,
+    get_human_object_recognition_categories
+)
 
 
 # local modules
 # sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 sys.path.insert(0, get_project_root_path())
 # from external_libs.model_vs_human.mapper as mvh
-from diverse_universe.external_libs.model_vs_human.mapper import (
-    get_human_categories,
-    get_human_object_recognition_categories
-)
+# from diverse_universe.external_libs.model_vs_human.mapper import (
+#     get_human_categories,
+#     get_human_object_recognition_categories
+# )
 from diverse_universe.local_models.ensemble import (
     # REDNECK_ENSEMBLE_KEY,
     # SINGLE_MODEL_KEY,
@@ -62,6 +66,10 @@ IMAGENET_R_JSON = os.path.join(JSON_PATH, "imagenet_r_wnids.json")
 
 def make_mvh_model_wrapper(model):
     return make_model_classes_wrapper(model, make_mvh_mapper)
+
+
+def get_human_categories():
+    return HumanCategories()
 
 
 def make_mvh_mapper():
