@@ -25,7 +25,10 @@ from diverse_universe.local_models.utils import (
     get_model,
     make_model_builder_from_list
 )
-from diverse_universe.local_datasets.utils import (
+# from diverse_universe.local_datasets.utils import (
+#     get_probs
+# )
+from diverse_universe.train.losses import (
     get_probs
 )
 # from train_eval.utils import (

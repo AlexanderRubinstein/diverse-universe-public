@@ -3,12 +3,19 @@ import sys
 import torch
 import shutil
 import sklearn
+import numpy as np
+import torch.nn.functional as F
+import tqdm
 from stuned.utility.utils import (
     raise_unknown,
-    # check_dict,
     get_with_assert,
+    pretty_json,
+    log_or_print,
+    append_dict,
+    aggregate_tensors_by_func,
+    apply_pairwise
+    # check_dict,
     # update_dict_by_nested_key,
-    pretty_json
 )
 from stuned.utility.logger import (
     # LOGGING_CONFIG_KEY,
@@ -39,13 +46,16 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 #     make_logger,
 #     try_to_log_in_csv
 # )
-from diverse_universe.train_eval.losses import (
-    # METRICS,
-    # div_ortega,
+from diverse_universe.train.losses import (
+    PER_SAMPLE_METRIC_NAMES,
     div_different_preds,
     div_different_preds_per_sample,
     div_continous_unique_per_sample,
     div_continous_unique,
+    div_var,
+    get_probs
+    # METRICS,
+    # div_ortega,
     # div_mean_logit,
     # div_max_logit,
     # div_mean_prob,
@@ -53,18 +63,33 @@ from diverse_universe.train_eval.losses import (
     # div_entropy,
     # div_different_preds_per_model,
     # focal_modifier,
-    div_var
 )
-from diverse_universe.utility.for_notebooks import (
-    make_cross_dict,
-    # make_ensembles_from_paths,
-    # plot_table_from_cross_dict,
-    # get_long_table,
-    # format_number,
-    # make_models_dict_from_huge_string,
-    # evaluate_ensembles,
-    # ensemble_from_multiple_paths,
-    evaluate_ensemble
+# from diverse_universe.utility.for_notebooks import (
+#     # make_cross_dict,
+#     # make_ensembles_from_paths,
+#     # plot_table_from_cross_dict,
+#     # get_long_table,
+#     # format_number,
+#     # make_models_dict_from_huge_string,
+#     # evaluate_ensembles,
+#     # ensemble_from_multiple_paths,
+#     # evaluate_ensemble
+# )
+from diverse_universe.local_models.ensemble import (
+    is_ensemble,
+    get_ensemble,
+    make_ensembles
+    # REDNECK_ENSEMBLE_KEY,
+    # SINGLE_MODEL_KEY,
+    # POE_KEY,
+    # make_redneck_ensemble,
+    # split_linear_layer
+)
+from diverse_universe.local_models.wrappers import (
+    wrap_model
+)
+from diverse_universe.train import (
+    METRICS
 )
 # from diverse_universe.local_models.ensemble import (
 #     make_ensembles_from_paths
@@ -143,14 +168,13 @@ from diverse_universe.local_datasets.imagenet_c import (
 sys.path.pop(0)
 
 
-# TODO(Alex | 11.05.2024): move to utils
-SCRATCH_LOCAL = os.path.join(
-    os.sep,
-    "scratch_local",
-    f"{os.environ.get('USER')}-{os.environ.get('SLURM_JOB_ID')}",
-)
-
-
+# # TODO(Alex | 11.05.2024): move to utils
+# SCRATCH_LOCAL = os.path.join(
+#     os.sep,
+#     "scratch_local",
+#     f"{os.environ.get('USER')}-{os.environ.get('SLURM_JOB_ID')}",
+# )
+ADJUSTED_GROUPWISE_KEY = "_adjusted"
 IN_VAL_CACHED_2LAYER_PATH = \
     "/mnt/qb/work/oh/arubinstein17/cache/ImageNet1k/val_cache/ed4f10f4ddeb07f1d876_torch_load_block_-1_model_imagenet1k_dataset_1_epochs_50000_samples.hdf5"
 
@@ -332,8 +356,8 @@ def prepare_waterbirds_dataloaders(eval_type, batch_size=128, num_workers=4):
         waterbirds_config = {
             "type": "waterbirds",
             'waterbirds': {
-                # "root_dir": "/mnt/qb/work/oh/arubinstein17/cache/wilds/waterbirds",
-                "root_dir": SCRATCH_LOCAL,
+                "root_dir": "/mnt/qb/work/oh/arubinstein17/cache/wilds/waterbirds",
+                # "root_dir": SCRATCH_LOCAL,
                 # "root_dir": "./",
                 "keep_metadata": True,
                 # "eval_transforms": "ImageNetEval"
@@ -352,8 +376,8 @@ def prepare_waterbirds_dataloaders(eval_type, batch_size=128, num_workers=4):
         waterbirds_config_with_transforms = {
             "type": "waterbirds",
             'waterbirds': {
-                # "root_dir": "/mnt/qb/work/oh/arubinstein17/cache/wilds/waterbirds",
-                "root_dir": SCRATCH_LOCAL,
+                "root_dir": "/mnt/qb/work/oh/arubinstein17/cache/wilds/waterbirds",
+                # "root_dir": SCRATCH_LOCAL,
                 # "root_dir": "./",
                 "keep_metadata": True,
                 "eval_transforms": "ImageNetEval"
@@ -666,3 +690,745 @@ def evaluate_ood_detection(
         model_detailed_res_ood,
         verbose=False
     )
+
+
+def evaluate_ensembles(
+    ensembles,
+    dataloader,
+    device=torch.device("cuda:0"),
+    feature_extractor=None,
+    wrap=None,
+    metrics_mappings=METRICS,
+    prune_metrics=["dis"],
+    evaluation_func=None,
+    evaluation_kwargs={},
+    logger=None
+):
+
+    if isinstance(ensembles[0], str):
+        ensemble_paths = ensembles
+        ensembles = [get_ensemble(ensemble_path) for ensemble_path in ensemble_paths]
+
+    else:
+        ensemble_paths = [f"ensemble_{i}" for i in range(len(ensembles))]
+
+    evaluation_kwargs["models_before_wrapper"] = ensembles
+
+    if evaluation_kwargs.get("cook_soup", False):
+        for ensemble in ensembles:
+            ensemble.cook_soup()
+
+    if wrap is not None:
+        ensembles = [wrap_model(ensemble, wrap) for ensemble in ensembles]
+
+    res = {}
+    for ensemble_path, ensemble in zip(ensemble_paths, ensembles):
+        if is_ensemble(ensemble):
+
+            res[ensemble_path] = evaluate_ensemble(
+                ensemble,
+                dataloader,
+                device,
+                feature_extractor,
+                metrics_mappings=metrics_mappings,
+                prune_metrics=prune_metrics,
+                evaluation_func=evaluation_func,
+                evaluation_kwargs=evaluation_kwargs,
+                logger=logger
+            )
+        else:
+            assert evaluation_func is None, \
+                "can provide evaluation function only for ensembles"
+
+            if feature_extractor is not None:
+                log_or_print(
+                    "Ignoring feature extractor for single model",
+                    logger,
+                    auto_newline=True
+                )
+
+            stat_value = evaluate_model(
+                ensemble,
+                dataloader,
+                device,
+                logger=logger
+            )
+            res[ensemble_path] = {
+                "best_single_model": stat_value
+            }
+
+    return res
+
+
+def evaluate_ensembles_on_dataloaders(
+    ensembles,
+    dataloaders,
+    device=torch.device("cuda:0"),
+    feature_extractor=None,
+    wrap=None,
+    verbose=True,
+    metrics_mappings=METRICS,
+    prune_metrics=["dis"],
+    previous_results={},
+    evaluation_func=None,
+    evaluation_kwargs={},
+    logger=None
+):
+
+    def print_using(new, default, name, what):
+        log_or_print(
+            f"Using {new} {what} "
+            f"instead of {default} for dataloader {name}",
+            logger,
+            auto_newline=True
+        )
+
+    res = {}
+
+    for name, dataloader in dataloaders.items():
+
+        if name in previous_results:
+            log_or_print(
+                f"Skipping dataloader: {name}",
+                logger,
+                auto_newline=True
+            )
+            continue
+
+        evaluation_kwargs["dataset_id"] = name
+        per_dataloader_wrap = None
+        per_dataloader_feature_extractor = "empty"
+        if isinstance(dataloader, tuple):
+
+            dataloader_tuple = dataloader
+            dataloader, per_dataloader_wrap = dataloader_tuple[0], dataloader_tuple[1]
+            print_using(per_dataloader_wrap, wrap, name, "wrapper")
+
+            if len(dataloader_tuple) == 3:
+                per_dataloader_feature_extractor = dataloader_tuple[2]
+                print_using(
+                    per_dataloader_feature_extractor,
+                    type(feature_extractor),
+                    name,
+                    "feature_extractor"
+                )
+        log_or_print(
+            f"evaluating on dataloader: {name}",
+            logger,
+            auto_newline=True
+        )
+
+        res[name] = evaluate_ensembles(
+            ensembles,
+            dataloader,
+            device,
+            (
+                feature_extractor
+                if per_dataloader_feature_extractor == "empty"
+                else per_dataloader_feature_extractor
+            ),
+            wrap if per_dataloader_wrap is None else per_dataloader_wrap,
+            metrics_mappings=metrics_mappings,
+            prune_metrics=prune_metrics,
+            evaluation_func=evaluation_func,
+            evaluation_kwargs=evaluation_kwargs,
+            logger=logger
+        )
+
+    if verbose:
+        log_or_print(
+            pretty_json(res),
+            logger,
+            auto_newline=True
+        )
+        log_or_print(
+            pretty_json(aggregate_by_ensemble(res)),
+            logger,
+            auto_newline=True
+        )
+    return res
+
+
+
+def aggregate_by_ensemble(eval_data):
+
+    def aggregate_dicts(dicts):
+        assert len(dicts)
+        if isinstance(dicts[0], float):
+            return dicts
+        total_dict = {}
+        for current_dict in dicts:
+            append_dict(total_dict, current_dict, allow_new_keys=True)
+
+        for key, value in total_dict.items():
+            value_as_array = np.array(value)
+            total_dict[key] = f"{np.mean(value_as_array)} +- {np.std(value_as_array)}"
+        return total_dict
+
+    res = {}
+    for dataloader_name, ensemble_evals in eval_data.items():
+
+        res[dataloader_name] = aggregate_dicts(list(ensemble_evals.values()))
+    return res
+
+# TODO(Alex | 28.03.2024): Move all eval args inside evaluation_kwargs
+def make_cross_dict(
+    models_dict,
+    dataloaders_dict,
+    save_path,
+    device=torch.device("cuda:0"),
+    feature_extractor=None,
+    wrap=None,
+    verbose=True,
+    aggregate=True,
+    metrics_mappings=METRICS,
+    prune_metrics=["dis"],
+    evaluation_func=None,
+    evaluation_kwargs={},
+    save_after_each_model=True,
+    logger=None,
+    model_to_prop_dict=None
+):
+
+    if os.path.exists(save_path):
+        log_or_print(
+            f"Loading existing results from {save_path}",
+            logger,
+            auto_newline=True
+        )
+        res = torch.load(save_path)
+    else:
+        res = {}
+    for model_name, models in models_dict.items():
+
+        evaluation_kwargs["model_id"] = model_name
+
+        log_or_print(
+            f"evaluating on model: {model_name}",
+            logger,
+            auto_newline=True
+        )
+        if model_name in res:
+            previous_results = res[model_name]
+        else:
+            previous_results = {}
+
+        res[model_name] = previous_results
+
+        if isinstance(models, tuple):
+            if models[1] == "recompute":
+                previous_results = {}
+            else:
+                assert models[1] == "reuse"
+            models = models[0]
+
+        # if model paths are given instead of models
+        if isinstance(models[0], str):
+            models = make_ensembles(models)
+
+        eval_res = evaluate_ensembles_on_dataloaders(
+            models,
+            dataloaders_dict,
+            device=device,
+            feature_extractor=feature_extractor,
+            wrap=wrap,
+            verbose=False,
+            metrics_mappings=metrics_mappings,
+            prune_metrics=prune_metrics,
+            previous_results=previous_results,
+            evaluation_func=evaluation_func,
+            evaluation_kwargs=evaluation_kwargs,
+            logger=logger
+        )
+
+        if aggregate:
+            eval_res = aggregate_by_ensemble(eval_res)
+
+        res[model_name] |= eval_res
+        res[model_name] |= model_to_prop_dict[model_name]
+        if save_after_each_model:
+            torch.save(res, save_path)
+
+    if verbose:
+        log_or_print(
+            pretty_json(res),
+            logger,
+            auto_newline=True
+        )
+    torch.save(res, save_path)
+    return res
+
+
+def evaluate_ensemble(
+    ensemble,
+    dataloader,
+    device=torch.device("cuda:0"),
+    feature_extractor=None,
+    metrics_mappings=None,
+    return_detailed=False,
+    prune_metrics=["dis"],
+    average_after_softmax=False,
+    evaluation_func=None,
+    evaluation_kwargs={},
+    logger=None
+):
+
+    prev_feature_extractor = ensemble.feature_extractor
+
+    if feature_extractor is not None:
+        ensemble.feature_extractor = feature_extractor
+        ensemble.feature_extractor.to(device)
+
+    ensemble.to(device)
+    num_submodels = len(ensemble.submodels)
+
+    prev_weights = ensemble.weights
+    ensemble.set_weights([1.0 for _ in range(num_submodels)], normalize=False)
+    if average_after_softmax:
+        prev_softmax_ensemble = ensemble.softmax_ensemble
+        ensemble.softmax_ensemble = True
+
+    if evaluation_func is None:
+        res = evaluate_model(
+            ensemble,
+            dataloader,
+            device,
+            metrics_mappings=metrics_mappings,
+            return_detailed=return_detailed,
+            prune_metrics=prune_metrics,
+            **evaluation_kwargs
+        )
+    else:
+        res = evaluation_func(
+            ensemble,
+            dataloader,
+            device,
+            **evaluation_kwargs
+        )
+    if average_after_softmax:
+        ensemble.softmax_ensemble = prev_softmax_ensemble
+    ensemble.set_weights(prev_weights)
+    if feature_extractor is not None:
+        ensemble.feature_extractor.to(torch.device("cpu"))
+    ensemble.feature_extractor = prev_feature_extractor
+    ensemble.to("cpu")
+
+    return res
+
+
+# def are_probs(logits):
+#     if (
+#             logits.min() >= 0
+#         and
+#             logits.max() <= 1
+#         # don't check sums to one for the cases
+#         # like IN_A where masking drops some probs
+
+#         # and
+#         #     abs(logits.sum(-1)[0][0] - 1) > EPS
+#     ):
+#         return True
+#     return False
+
+
+# def get_probs(logits):
+#     if are_probs(logits):
+#         probs = logits
+#     else:
+#         probs = F.softmax(logits, dim=-1)
+#     return probs
+
+
+# TODO(Alex | 25.07.2024): re-balance if conditions
+def record_diversity(
+    res,
+    outputs,
+    stacked_outputs,
+    metrics_mappings,
+    labels=None,
+    name_prefix="",
+    detailed_results=None
+):
+
+    # metrics_mappings is a tuple of tuples:
+    # ((name_1, func_1), ... (name_k, func_k))
+    for metric_tuple in metrics_mappings:
+
+        metric_name = metric_tuple[0]
+        metric_key = name_prefix + metric_name
+        compute_metric = metric_tuple[1]
+        if metric_name not in res:
+            res[metric_key] = 0
+        if metric_name in PER_SAMPLE_METRIC_NAMES:
+            value = compute_metric(stacked_outputs)
+        elif metric_name == "div_ortega":
+            assert labels is not None
+            value = compute_metric(stacked_outputs, labels).item()
+        elif metric_name in [
+            "var",
+            "std",
+            "dis",
+            "max_var",
+            "div_different_preds",
+            "div_mean_logits",
+            "div_max_logit",
+            "div_entropy",
+            "div_max_prob",
+            "div_mean_prob",
+            "div_different_preds_per_model",
+            "div_continous_unique"
+        ]:
+            value = compute_metric(stacked_outputs).item()
+        else:
+            value = aggregate_tensors_by_func(
+                apply_pairwise(outputs, compute_metric)
+            ).item()
+
+        if not torch.is_tensor(value):
+            res[metric_key] += value
+
+        if detailed_results is not None:
+            if metric_key in PER_SAMPLE_METRIC_NAMES:
+                if metric_key not in detailed_results:
+                    detailed_results[metric_key] = []
+
+                if metric_key in detailed_results:
+                    for subvalue in value:
+                        detailed_results[metric_key].append(subvalue.item())
+
+
+# TODO(Alex | 15.05.2024): Make it readable
+def evaluate_model(
+    model,
+    dataloader,
+    device=torch.device("cuda:0"),
+    select_output=None,
+    metrics_mappings=None,
+    feature_extractor=None,
+    return_detailed=False,
+    prune_metrics=["dis"],
+    metadata_to_group=None,
+    logger=None,
+    **evaluation_kwargs
+):
+
+    def update_correct(
+        res,
+        key,
+        outputs,
+        labels,
+        detailed_results,
+        metadata,
+        per_group_totals
+    ):
+
+        def add_to_dict(dict, key, subkey, value):
+            if key not in dict:
+                dict[key] = {}
+            if subkey not in dict[key]:
+                dict[key][subkey] = []
+            dict[key][subkey].append(value)
+
+        def zero_key(d, k):
+            if k not in d:
+                d[k] = 0
+
+        def pad(arr, bigger_arr, value=0):
+            while len(arr) < len(bigger_arr):
+                if isinstance(arr, np.ndarray):
+                    arr = np.append(arr, [value])
+                else:
+                    assert isinstance(arr, list)
+                    arr.append(value)
+            return arr
+
+        zero_key(res, key)
+
+        # masking out samples from ImageNet-A/R
+        # that did not have argmax within selected 200 classes
+        mask = (outputs.sum(-1) == 0)
+        predicted = torch.argmax(outputs, dim=-1)
+        predicted[mask] = -1
+
+        if detailed_results is not None:
+            probs = get_probs(outputs)
+            for i, pred in enumerate(predicted):
+                pred = pred.item()
+                add_to_dict(detailed_results, key, "pred", pred)
+                add_to_dict(detailed_results, key, "conf", probs[i, pred].item())
+
+        if len(predicted.shape) == 1 and len(labels.shape) == 2:
+            # ImageNet-hard case, based on this: https://github.com/kirill-vish/Beyond-INet/blob/fd9b1b6c36ecf702fbcc355e037d8e9d307b0137/inference/robustness.py#L117C9-L117C71
+            assert predicted.shape[0] == labels.shape[0]
+            res[key] += (predicted[:, None] == labels).any(1).sum().item()
+        else:
+            assert predicted.shape == labels.shape
+            correct = (predicted == labels)
+
+            # compute stats for different groups
+            if metadata is not None:
+
+                assert metadata_to_group is not None
+                groups = metadata_to_group(metadata)
+
+                max_group = groups.max().item()
+                num_groups = max_group + 1
+
+                group_acc = np.array([0.0] * num_groups)
+                group_count = np.array([0.0] * num_groups)
+
+                denom = []
+                processed_data_counts = []
+
+                for current_group in range(num_groups):
+                    mask = (groups == current_group).to(correct.device)
+
+                    group_key = key + f'_group_{current_group}'
+
+                    zero_key(res, group_key)
+                    zero_key(per_group_totals, group_key)
+
+                    current_group_count = mask.sum().item()
+                    group_count[current_group] \
+                        = current_group_count
+                    num_correct_for_group = (mask * correct).sum().item()
+                    group_acc[current_group] \
+                        = num_correct_for_group / (current_group_count + int(current_group_count == 0))
+
+                    processed_data_counts.append(per_group_totals[group_key])
+                    per_group_totals[group_key] += group_count[current_group]  # for unweighted group accuracy
+                    denom.append(per_group_totals[group_key])
+                    res[group_key] += num_correct_for_group  # for unweighted group accuracy
+
+                group_wise_key = key + ADJUSTED_GROUPWISE_KEY
+                if group_wise_key not in res:
+                    res[group_wise_key] = np.array([0] * num_groups)
+                else:
+                    res_groupwise = res[group_wise_key]
+                    processed_data_counts = pad(
+                        processed_data_counts,
+                        res_groupwise,
+                        1
+                    )
+                    denom = pad(denom, res_groupwise)
+                    group_acc = pad(group_acc, res_groupwise)
+                    group_count = pad(group_count, res_groupwise)
+
+                denom = np.array(denom)
+                processed_data_counts = np.array(processed_data_counts)
+
+                denom += (denom == 0).astype(int)
+                prev_weight = processed_data_counts / denom
+                curr_weight = group_count / denom
+
+                res[group_wise_key] \
+                    = (prev_weight * res[group_wise_key] + curr_weight * group_acc)
+
+            res[key] += (correct).sum().item()
+
+    def prune_metrics_mappings(original_metrics_mappings, keys_to_prune):
+        metrics_mappings = []
+        for metric_tuple in original_metrics_mappings:
+            metric_name = metric_tuple[0]
+            if metric_name not in keys_to_prune:
+                metrics_mappings.append(metric_tuple)
+        return tuple(metrics_mappings)
+
+    def aggregate_over_submodels(res, submodel_values, suffix=''):
+
+        if len(submodel_values) > 0:
+
+            res["best_single_model" + suffix] = max(
+                submodel_values
+            )
+            res["mean_single_model" + suffix] = np.array(submodel_values).mean()
+
+    # Ensure the model is in evaluation mode
+    model.to(device)
+    model.eval()
+    if feature_extractor is not None:
+        feature_extractor.to(device)
+        feature_extractor.eval()
+
+    # correct = 0
+    total = 0
+
+    res = {}
+
+    # detailed results = per sample results
+    if return_detailed:
+        detailed_results = {}
+    else:
+        detailed_results = None
+
+    mappings_pruned = False
+    per_group_totals = {}
+
+    with torch.no_grad():  # No need to track gradients during evaluation
+        for batch_idx, data in enumerate(tqdm(dataloader)):
+
+            inputs = data[0]
+            labels = data[1]
+            if len(data) > 2:
+                assert len(data) in [3, 4]
+                metadata = data[2]
+            else:
+                metadata = None
+
+            inputs, labels = inputs.to(device), labels.to(device)
+
+            if feature_extractor is not None:
+                inputs = feature_extractor(inputs)
+            if hasattr(model, "soup") and model.soup is not None:
+                # TODO(Alex | 13.05.2024): put it inside method model.forward_soup
+                if hasattr(model, "feature_extractor") and model.feature_extractor is not None:
+                    soup_inputs = model.apply_feature_extractor(inputs)
+                else:
+                    soup_inputs = inputs
+                soup_output = model.soup(soup_inputs)
+                update_correct(
+                    res,
+                    "soup",
+                    soup_output,
+                    labels,
+                    detailed_results,
+                    metadata,
+                    per_group_totals
+                )
+
+            outputs = model(inputs)
+
+            if isinstance(outputs, list):
+
+                assert model.weights is not None, \
+                    "Expect ensemble ensemble prediction mode"
+                outputs = [output[1] for output in outputs]
+                for i, output in enumerate(outputs):
+                    if i == len(outputs) - 1:
+                        key = f"ensemble"
+                    else:
+                        key = f"submodel_{i}"
+                    update_correct(
+                        res,
+                        key,
+                        output,
+                        labels,
+                        detailed_results,
+                        metadata,
+                        per_group_totals
+                    )
+
+                submodels_outputs = outputs[:-1]
+
+                if metrics_mappings is not None:
+
+                    # to avoid OOM
+                    if prune_metrics and len(submodels_outputs) > 2 and not mappings_pruned:
+                        metrics_mappings = prune_metrics_mappings(
+                            metrics_mappings,
+                            prune_metrics
+                        )
+                        mappings_pruned = True
+
+                    record_diversity(
+                        res,
+                        submodels_outputs,
+                        torch.stack(submodels_outputs, dim=0),
+                        metrics_mappings,
+                        labels=labels,
+                        detailed_results=detailed_results
+                    )
+
+            else:
+                update_correct(
+                    res,
+                    "single_model",
+                    outputs,
+                    labels,
+                    detailed_results,
+                    metadata,
+                    per_group_totals
+                )
+
+            total += labels.size(0)
+
+    keys_to_pop = []
+
+    res_extension_dict = {}
+
+    for key in res:
+
+        if ADJUSTED_GROUPWISE_KEY in key:
+            for group_id, value in enumerate(res[key]):
+                res_extension_dict[key + f"_group_{group_id}"] = value
+            keys_to_pop.append(key)
+            continue
+
+        if (
+                "ensemble" in key
+            or
+                "submodel_" in key
+            or
+                "single_model" == key
+            or
+                "best_single_model" == key
+            or
+                "soup" in key
+        ):
+            if "group" in key:
+                divide_by = per_group_totals[key]
+            else:
+                divide_by = total
+        else:
+            divide_by = len(dataloader)
+
+        if divide_by == 0:
+            assert "group" in key
+            keys_to_pop.append(key)
+        else:
+            res[key] /= divide_by
+
+    for key in keys_to_pop:
+        res.pop(key)
+
+    res |= res_extension_dict
+
+    # aggregate to worst groups
+    if len(per_group_totals) > 0:
+        tmp = {}
+        for key in res:
+
+            if "group" in key:
+                original_key = key.split("_group")[0]
+                if original_key not in tmp:
+                    tmp[original_key] = []
+                tmp[original_key].append(res[key])
+
+        for key, value in tmp.items():
+            res[key + "_worst_group"] = min(value)
+
+    # aggregate to best and mean model
+    if len(res) == 1:
+        res = res["single_model"]
+    else:
+
+        aggregate_over_submodels(
+            res,
+            [
+                value for key, value in res.items()
+                    if "submodel" in key and not "group" in key
+            ]
+        )
+        aggregate_over_submodels(
+            res,
+            [
+                value for key, value in res.items()
+                    if "submodel" in key and "worst_group" in key
+            ],
+            suffix="_worst_group"
+        )
+
+    if return_detailed:
+        return res, detailed_results
+
+    return res

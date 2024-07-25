@@ -20,12 +20,12 @@ sys.path.insert(0, get_project_root_path())
 #     func_for_dim
 # )
 # from local_datasets.common import get_manifold_projector_dataset
-from diverse_universe.local_datasets.utils import (
-    # convert_dataset_to_tensor,
-    # prepare_for_pickling,
-    # record_diversity,
-    get_probs
-)
+# from diverse_universe.local_datasets.utils import (
+#     # convert_dataset_to_tensor,
+#     # prepare_for_pickling,
+#     # record_diversity,
+#     get_probs
+# )
 # from utility.logger import (
 #     make_logger,
 #     make_base_estimator_name
@@ -61,6 +61,10 @@ sys.path.pop(0)
 # DIVDIS_LOSS_KEY = "divdis"
 # LAMBDA_KEY = "lambda"
 EPS = 1e-9
+PER_SAMPLE_METRIC_NAMES = [
+    "div_different_preds_per_sample",
+    "div_continous_unique_per_sample"
+]
 # MAX_MODELS_WITHOUT_OOM = 5
 
 
@@ -1492,3 +1496,26 @@ def dis(out, mode="mi", reduction="mean"):
 #         assert reduction == "mean"
 #         agg_func = torch.mean
 #     return aggregate_tensors_by_func(adv_loss, func=agg_func)
+
+
+def are_probs(logits):
+    if (
+            logits.min() >= 0
+        and
+            logits.max() <= 1
+        # don't check sums to one for the cases
+        # like IN_A where masking drops some probs
+
+        # and
+        #     abs(logits.sum(-1)[0][0] - 1) > EPS
+    ):
+        return True
+    return False
+
+
+def get_probs(logits):
+    if are_probs(logits):
+        probs = logits
+    else:
+        probs = F.softmax(logits, dim=-1)
+    return probs
