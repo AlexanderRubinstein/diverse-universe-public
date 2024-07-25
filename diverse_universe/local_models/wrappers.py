@@ -10,10 +10,15 @@ from stuned.utility.utils import (
     raise_unknown,
     read_json
 )
-from modelvshuman.helper.human_categories import (
-    HumanCategories,
-    get_human_object_recognition_categories
-)
+from stuned.utility.imports import lazy_import
+# from modelvshuman.helper.human_categories import (
+#     HumanCategories,
+#     get_human_object_recognition_categories
+# )
+
+
+# lazy imports
+mvh = lazy_import("modelvshuman")
 
 
 # local modules
@@ -69,7 +74,7 @@ def make_mvh_model_wrapper(model):
 
 
 def get_human_categories():
-    return HumanCategories()
+    return mvh.helper.human_categories.HumanCategories()
 
 
 def make_mvh_mapper():
@@ -79,7 +84,8 @@ def make_mvh_mapper():
         human_categories.get_imagenet_indices_for_category
     )
 
-    mapper.categories = get_human_object_recognition_categories()
+    mapper.categories = \
+        mvh.helper.human_categories.get_human_object_recognition_categories()
 
     mapper.category_to_index = {
         category: i for i, category in enumerate(mapper.categories)

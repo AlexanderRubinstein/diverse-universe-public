@@ -66,9 +66,9 @@ from diverse_universe.utility.for_notebooks import (
     # ensemble_from_multiple_paths,
     evaluate_ensemble
 )
-from diverse_universe.local_models.ensemble import (
-    make_ensembles_from_paths
-)
+# from diverse_universe.local_models.ensemble import (
+#     make_ensembles_from_paths
+# )
 from diverse_universe.local_models.common import (
     make_models_dict_from_huge_string
 )

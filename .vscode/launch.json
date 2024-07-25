@@ -11,6 +11,7 @@
             "program": "./diverse_universe/cross_eval/main.py",
             "console": "integratedTerminal",
             "justMyCode": true,
+            // "justMyCode": false,
             "args": [
                 "--config_path",
                 "./configs/eval.yaml"

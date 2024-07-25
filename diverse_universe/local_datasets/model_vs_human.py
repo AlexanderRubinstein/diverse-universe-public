@@ -15,15 +15,20 @@ from stuned.utility.utils import (
     # get_hash,
     # parse_name_and_number
 )
+from stuned.utility.imports import lazy_import
 from stuned.local_datasets.utils import (
     wrap_dataloader
 )
 from stuned.local_datasets.transforms import (
     make_normalization_transforms
 )
-from modelvshuman.utils import (
-    load_dataset
-)
+# from modelvshuman.utils import (
+#     load_dataset
+# )
+
+
+# lazy imports
+mvh = lazy_import("modelvshuman")
 
 
 # local modules
@@ -82,7 +87,7 @@ def get_modelvshuman_dataset(dataset_type, batch_size, num_workers=1):
 
     # mvh_utils = mvh.utils.import_from_model_vs_human("utils")
 
-    dataset = load_dataset(
+    dataset = mvh.utils.load_dataset(
         dataset_type,
         batch_size=batch_size,
         num_workers=num_workers
