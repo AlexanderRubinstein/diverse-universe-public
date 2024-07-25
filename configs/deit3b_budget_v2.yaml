@@ -1,0 +1,110 @@
+cache_path: ./cache
+data:
+  dataset:
+    from_h5:
+      eval_splits:
+      - val
+      keys_order:
+      - embed
+      - label
+      max_chunk: 1281167
+      num_classes: 1000
+      path:
+        train: /mnt/qb/work/oh/arubinstein17/cache/ImageNet1k/train_cache/ed4f10f4ddeb07f1d876_torch_load_block_-1_model_imagenet1k_dataset_4_epochs_1281167_samples.hdf5
+        val: /mnt/qb/work/oh/arubinstein17/cache/ImageNet1k/val_cache/ed4f10f4ddeb07f1d876_torch_load_block_-1_model_imagenet1k_dataset_1_epochs_50000_samples.hdf5
+      total_samples:
+        train: 5124668
+    type: from_h5
+    use_train_for_eval: false
+  num_data_readers: 0
+# logging:
+  # gdrive_storage_folder: https://drive.google.com/drive/folders/1bCKbgY29CXsgYSwBHk49weolkA5cBePT?usp=share_link
+  # output_csv:
+  #   path: /home/oh/arubinstein17/github_qb/diverse-universe/inputs/https:(slash)(slash)docs.google.com(slash)spreadsheets(slash)d(slash)1AlsmgL6JmD0xkt7kYzwosF4XQ4XceB2zF4xv23f81IA(slash)edit/joint_loss0104.csv
+  #   row_number: 112
+  #   spreadsheet_url: https://docs.google.com/spreadsheets/d/1AlsmgL6JmD0xkt7kYzwosF4XQ4XceB2zF4xv23f81IA/edit
+  #   worksheet_name: joint_loss0104
+model:
+  redneck_ensemble:
+    base_estimator:
+      separation_config:
+        block_id: -1
+        separate: classifier
+      torch_load:
+        model_name: deit3_21k
+        path: null
+      type: torch_load
+    keep_inactive_on_cpu: false
+    n_models: 5
+    random_select: 2
+  type: redneck_ensemble
+params:
+  eval:
+    batch_size: 32
+    eval_only_last_epoch: false
+  metric:
+    accuracy_top_k:
+      top_k: 1
+    type: accuracy_top_k
+  random_seed: 42
+  setup: default
+  to_eval: true
+  to_profile: false
+  to_train: true
+  train:
+    batch_size: 32
+    criterion:
+      divdis:
+        disagree_after_epoch: 0
+        disagree_below_threshold: null
+        gamma: <Placeholder>
+        lambda: null
+        loss_type: a2d
+        manual_lambda: <placeholder>
+        modifier: budget
+        task_loss:
+          type: xce
+        use_always_labeled: true
+      smoothing_eps: 0.5
+      type: divdis
+    freeze_model_on_first_epoch: true
+    n_epochs: 11
+    optimizer:
+      adam:
+        weight_decay: 0.9
+      adamW:
+        weight_decay: 0.1
+      lr_scheduler:
+        from_class-cosine_scheduler:
+          class: torch.optim.lr_scheduler.CosineAnnealingLR
+          kwargs:
+            T_max: 15
+        type: from_class-cosine_scheduler
+      sgd:
+        momentum: 0.0
+        weight_decay: 0.0
+      start_lr: 0.001
+      type: adamW
+    reset_epochs: true
+  use_gpu: true
+patch:
+  diversity_lambda: <placeholder>
+statistics:
+  batchwise: false
+  keep_modelwise: false
+  use_tb: false
+  # use_wandb: true
+  use_wandb: false
+  wandb:
+    netrc_path: ~/.netrc
+    stats:
+      input: false
+      logits: false
+      loss: true
+      metrics: true
+      prediction: false
+      target: false
+    # wandb_init_kwargs:
+    #   tags:
+    #   - budget_loss_stronger_hp
+use_hardcoded_config: false

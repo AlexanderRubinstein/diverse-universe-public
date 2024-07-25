@@ -5,6 +5,18 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Python: train: main.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "./diverse_universe/train/main.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--config_path",
+                "./configs/deit3b_budget_v2.yaml"
+            ]
+        },
+        {
             "name": "Python: cross_eval: main.py",
             "type": "debugpy",
             "request": "launch",
