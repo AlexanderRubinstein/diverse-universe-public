@@ -57,14 +57,20 @@ from diverse_universe.train_eval.losses import (
 )
 from diverse_universe.utility.for_notebooks import (
     make_cross_dict,
-    make_ensembles_from_paths,
-    plot_table_from_cross_dict,
-    get_long_table,
-    format_number,
+    # make_ensembles_from_paths,
+    # plot_table_from_cross_dict,
+    # get_long_table,
+    # format_number,
     make_models_dict_from_huge_string,
-    evaluate_ensembles,
-    ensemble_from_multiple_paths,
+    # evaluate_ensembles,
+    # ensemble_from_multiple_paths,
     evaluate_ensemble
+)
+from diverse_universe.local_models.ensemble import (
+    make_ensembles_from_paths
+)
+from diverse_universe.local_models.common import (
+    make_models_dict_from_huge_string
 )
 from diverse_universe.local_datasets.common import (
     get_dataloaders,

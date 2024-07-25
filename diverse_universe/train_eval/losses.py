@@ -60,7 +60,7 @@ sys.path.pop(0)
 # DIVERSE_GRADIENTS_LOSS_KEY = "diverse_gradients_loss"
 # DIVDIS_LOSS_KEY = "divdis"
 # LAMBDA_KEY = "lambda"
-# EPS = 1e-9
+EPS = 1e-9
 # MAX_MODELS_WITHOUT_OOM = 5
 
 
@@ -313,134 +313,135 @@ sys.path.pop(0)
 #         )
 
 
-# # copied from: https://github.com/yoonholee/DivDis/blob/main/divdis.py#L6
-# def to_probs(logits, heads):
-#     """
-#     Converts logits to probabilities.
-#     Input must have shape [batch_size, heads * classes].
-#     Output will have shape [batch_size, heads, classes].
-#     """
+# copied from: https://github.com/yoonholee/DivDis/blob/main/divdis.py#L6
+def to_probs(logits, heads):
+    """
+    Converts logits to probabilities.
+    Input must have shape [batch_size, heads * classes].
+    Output will have shape [batch_size, heads, classes].
+    """
 
-#     B, N = logits.shape
-#     if N == heads:  # Binary classification; each head outputs a single scalar.
-#         preds = logits.sigmoid().unsqueeze(-1)
-#         probs = torch.cat([preds, 1 - preds], dim=-1)
-#     else:
-#         logits_chunked = torch.chunk(logits, heads, dim=-1)
-#         probs = torch.stack(logits_chunked, dim=1).softmax(-1)
-#     B, H, D = probs.shape
-#     assert H == heads
-#     return probs
-
-
-# # copied from: https://github.com/yoonholee/DivDis/blob/main/divdis.py#L46
-# class DivDisLoss(torch.nn.Module):
-#     """Computes pairwise repulsion losses for DivDis.
-
-#     Args:
-#         logits (torch.Tensor): Input logits with shape [BATCH_SIZE, HEADS * DIM].
-#         heads (int): Number of heads.
-#         mode (str): DIVE loss mode. One of {pair_mi, total_correlation, pair_l1}.
-#     """
-
-#     def __init__(self, heads, mode="mi", reduction="mean"):
-#         super().__init__()
-#         self.heads = heads
-#         self.mode = mode
-#         self.reduction = reduction
-
-#     def forward(self, logits):
-#         heads, mode, reduction = self.heads, self.mode, self.reduction
-#         probs = to_probs(logits, heads)
-#         return divdis_loss_forward_impl(probs, mode=mode, reduction=reduction)
-
-#         # if mode == "mi":  # This was used in the paper
-#         #     marginal_p = probs.mean(dim=0)  # H, D
-#         #     marginal_p = torch.einsum(
-#         #         "hd,ge->hgde", marginal_p, marginal_p
-#         #     )  # H, H, D, D
-#         #     marginal_p = rearrange(marginal_p, "h g d e -> (h g) (d e)")  # H^2, D^2
-
-#         #     joint_p = torch.einsum("bhd,bge->bhgde", probs, probs).mean(
-#         #         dim=0
-#         #     )  # H, H, D, D
-#         #     joint_p = rearrange(joint_p, "h g d e -> (h g) (d e)")  # H^2, D^2
-
-#         #     # Compute pairwise mutual information = KL(P_XY | P_X x P_Y)
-#         #     # Equivalent to: F.kl_div(marginal_p.log(), joint_p, reduction="none")
-#         #     kl_computed = joint_p * (joint_p.log() - marginal_p.log())
-#         #     kl_computed = kl_computed.sum(dim=-1)
-#         #     kl_grid = rearrange(kl_computed, "(h g) -> h g", h=heads)
-#         #     repulsion_grid = -kl_grid
-#         # elif mode == "l1":
-#         #     dists = (probs.unsqueeze(1) - probs.unsqueeze(2)).abs()
-#         #     dists = dists.sum(dim=-1).mean(dim=0)
-#         #     repulsion_grid = dists
-#         # else:
-#         #     raise ValueError(f"{mode=} not implemented!")
-
-#         # if reduction == "mean":  # This was used in the paper
-#         #     repulsion_grid = torch.triu(repulsion_grid, diagonal=1)
-#         #     repulsions = repulsion_grid[repulsion_grid.nonzero(as_tuple=True)]
-#         #     repulsion_loss = -repulsions.mean()
-#         # elif reduction == "min_each":
-#         #     repulsion_grid = torch.triu(repulsion_grid, diagonal=1) + torch.tril(
-#         #         repulsion_grid, diagonal=-1
-#         #     )
-#         #     rows = [r for r in repulsion_grid]
-#         #     row_mins = [row[row.nonzero(as_tuple=True)].min() for row in rows]
-#         #     repulsion_loss = -torch.stack(row_mins).mean()
-#         # else:
-#         #     raise ValueError(f"{reduction=} not implemented!")
-
-#         # return repulsion_loss
+    B, N = logits.shape
+    if N == heads:  # Binary classification; each head outputs a single scalar.
+        preds = logits.sigmoid().unsqueeze(-1)
+        probs = torch.cat([preds, 1 - preds], dim=-1)
+    else:
+        logits_chunked = torch.chunk(logits, heads, dim=-1)
+        probs = torch.stack(logits_chunked, dim=1).softmax(-1)
+    B, H, D = probs.shape
+    assert H == heads
+    return probs
 
 
-# def divdis_loss_forward_impl(probs, mode="mi", reduction="mean"):
-#     # input has shape [batch_size, heads, classes]
-#     # probs = to_probs(logits, heads)
-#     heads = probs.shape[1]
+# copied from: https://github.com/yoonholee/DivDis/blob/main/divdis.py#L46
+class DivDisLoss(torch.nn.Module):
+    """Computes pairwise repulsion losses for DivDis.
 
-#     if mode == "mi":  # This was used in the paper
-#         marginal_p = probs.mean(dim=0)  # H, D
-#         marginal_p = torch.einsum(
-#             "hd,ge->hgde", marginal_p, marginal_p
-#         )  # H, H, D, D
-#         marginal_p = rearrange(marginal_p, "h g d e -> (h g) (d e)")  # H^2, D^2
+    Args:
+        logits (torch.Tensor): Input logits with shape [BATCH_SIZE, HEADS * DIM].
+        heads (int): Number of heads.
+        mode (str): DIVE loss mode. One of {pair_mi, total_correlation, pair_l1}.
+    """
 
-#         joint_p = torch.einsum("bhd,bge->bhgde", probs, probs).mean(
-#             dim=0
-#         )  # H, H, D, D
-#         joint_p = rearrange(joint_p, "h g d e -> (h g) (d e)")  # H^2, D^2
+    def __init__(self, heads, mode="mi", reduction="mean"):
+        super().__init__()
+        self.heads = heads
+        self.mode = mode
+        self.reduction = reduction
 
-#         # Compute pairwise mutual information = KL(P_XY | P_X x P_Y)
-#         # Equivalent to: F.kl_div(marginal_p.log(), joint_p, reduction="none")
-#         kl_computed = joint_p * (joint_p.log() - marginal_p.log() + EPS)
-#         kl_computed = kl_computed.sum(dim=-1)
-#         kl_grid = rearrange(kl_computed, "(h g) -> h g", h=heads)
-#         repulsion_grid = -kl_grid
-#     elif mode == "l1":
-#         dists = (probs.unsqueeze(1) - probs.unsqueeze(2)).abs()
-#         dists = dists.sum(dim=-1).mean(dim=0)
-#         repulsion_grid = dists
-#     else:
-#         raise ValueError(f"{mode=} not implemented!")
+    def forward(self, logits):
+        heads, mode, reduction = self.heads, self.mode, self.reduction
+        probs = to_probs(logits, heads)
+        return divdis_loss_forward_impl(probs, mode=mode, reduction=reduction)
 
-#     if reduction == "mean":  # This was used in the paper
-#         repulsion_grid = torch.triu(repulsion_grid, diagonal=1)
-#         repulsions = repulsion_grid[repulsion_grid.nonzero(as_tuple=True)]
-#         repulsion_loss = -repulsions.mean()
-#     elif reduction == "min_each":
-#         repulsion_grid = torch.triu(repulsion_grid, diagonal=1) + torch.tril(
-#             repulsion_grid, diagonal=-1
-#         )
-#         rows = [r for r in repulsion_grid]
-#         row_mins = [row[row.nonzero(as_tuple=True)].min() for row in rows]
-#         repulsion_loss = -torch.stack(row_mins).mean()
-#     else:
-#         raise ValueError(f"{reduction=} not implemented!")
+        # if mode == "mi":  # This was used in the paper
+        #     marginal_p = probs.mean(dim=0)  # H, D
+        #     marginal_p = torch.einsum(
+        #         "hd,ge->hgde", marginal_p, marginal_p
+        #     )  # H, H, D, D
+        #     marginal_p = rearrange(marginal_p, "h g d e -> (h g) (d e)")  # H^2, D^2
 
-#     return repulsion_loss
+        #     joint_p = torch.einsum("bhd,bge->bhgde", probs, probs).mean(
+        #         dim=0
+        #     )  # H, H, D, D
+        #     joint_p = rearrange(joint_p, "h g d e -> (h g) (d e)")  # H^2, D^2
+
+        #     # Compute pairwise mutual information = KL(P_XY | P_X x P_Y)
+        #     # Equivalent to: F.kl_div(marginal_p.log(), joint_p, reduction="none")
+        #     kl_computed = joint_p * (joint_p.log() - marginal_p.log())
+        #     kl_computed = kl_computed.sum(dim=-1)
+        #     kl_grid = rearrange(kl_computed, "(h g) -> h g", h=heads)
+        #     repulsion_grid = -kl_grid
+        # elif mode == "l1":
+        #     dists = (probs.unsqueeze(1) - probs.unsqueeze(2)).abs()
+        #     dists = dists.sum(dim=-1).mean(dim=0)
+        #     repulsion_grid = dists
+        # else:
+        #     raise ValueError(f"{mode=} not implemented!")
+
+        # if reduction == "mean":  # This was used in the paper
+        #     repulsion_grid = torch.triu(repulsion_grid, diagonal=1)
+        #     repulsions = repulsion_grid[repulsion_grid.nonzero(as_tuple=True)]
+        #     repulsion_loss = -repulsions.mean()
+        # elif reduction == "min_each":
+        #     repulsion_grid = torch.triu(repulsion_grid, diagonal=1) + torch.tril(
+        #         repulsion_grid, diagonal=-1
+        #     )
+        #     rows = [r for r in repulsion_grid]
+        #     row_mins = [row[row.nonzero(as_tuple=True)].min() for row in rows]
+        #     repulsion_loss = -torch.stack(row_mins).mean()
+        # else:
+        #     raise ValueError(f"{reduction=} not implemented!")
+
+        # return repulsion_loss
+
+
+# based on: https://github.com/yoonholee/DivDis/blob/main/divdis.py
+def divdis_loss_forward_impl(probs, mode="mi", reduction="mean"):
+    # input has shape [batch_size, heads, classes]
+    # probs = to_probs(logits, heads)
+    heads = probs.shape[1]
+
+    if mode == "mi":  # This was used in the paper
+        marginal_p = probs.mean(dim=0)  # H, D
+        marginal_p = torch.einsum(
+            "hd,ge->hgde", marginal_p, marginal_p
+        )  # H, H, D, D
+        marginal_p = rearrange(marginal_p, "h g d e -> (h g) (d e)")  # H^2, D^2
+
+        joint_p = torch.einsum("bhd,bge->bhgde", probs, probs).mean(
+            dim=0
+        )  # H, H, D, D
+        joint_p = rearrange(joint_p, "h g d e -> (h g) (d e)")  # H^2, D^2
+
+        # Compute pairwise mutual information = KL(P_XY | P_X x P_Y)
+        # Equivalent to: F.kl_div(marginal_p.log(), joint_p, reduction="none")
+        kl_computed = joint_p * (joint_p.log() - marginal_p.log() + EPS)
+        kl_computed = kl_computed.sum(dim=-1)
+        kl_grid = rearrange(kl_computed, "(h g) -> h g", h=heads)
+        repulsion_grid = -kl_grid
+    elif mode == "l1":
+        dists = (probs.unsqueeze(1) - probs.unsqueeze(2)).abs()
+        dists = dists.sum(dim=-1).mean(dim=0)
+        repulsion_grid = dists
+    else:
+        raise ValueError(f"{mode=} not implemented!")
+
+    if reduction == "mean":  # This was used in the paper
+        repulsion_grid = torch.triu(repulsion_grid, diagonal=1)
+        repulsions = repulsion_grid[repulsion_grid.nonzero(as_tuple=True)]
+        repulsion_loss = -repulsions.mean()
+    elif reduction == "min_each":
+        repulsion_grid = torch.triu(repulsion_grid, diagonal=1) + torch.tril(
+            repulsion_grid, diagonal=-1
+        )
+        rows = [r for r in repulsion_grid]
+        row_mins = [row[row.nonzero(as_tuple=True)].min() for row in rows]
+        repulsion_loss = -torch.stack(row_mins).mean()
+    else:
+        raise ValueError(f"{reduction=} not implemented!")
+
+    return repulsion_loss
 
 
 # def focal_modifier(output, target, gamma):
@@ -1033,7 +1034,7 @@ sys.path.pop(0)
 # # import ot
 # from torchmetrics import JaccardIndex
 # # from torch.utils.data import DataLoader
-# from einops import rearrange
+from einops import rearrange
 
 # # from utils.simple_io import *
 # # from tensorboard import program
@@ -1149,22 +1150,22 @@ def div_var(outputs):
     return -F.softmax(outputs, dim=-1).var(0).mean()
 
 
-# def max_prob_var(outputs):
+def max_prob_var(outputs):
 
-#     probs = F.softmax(outputs, dim=-1)
-#     max_across_models = torch.max(probs, dim=-1).indices
-#     probs = probs[..., max_across_models]
+    probs = F.softmax(outputs, dim=-1)
+    max_across_models = torch.max(probs, dim=-1).indices
+    probs = probs[..., max_across_models]
 
-#     return probs.var(0).mean()
-
-
-# def div_std(outputs):
-#     return -F.softmax(outputs, dim=-1).std(0).mean()
+    return probs.var(0).mean()
 
 
-# def kl_divergence(out1, out2):
-#     loss = F.kl_div(torch.log(F.softmax(out1, dim=-1) + 1e-8), F.softmax(out2, dim=-1) + 1e-8, reduction='batchmean')
-#     return -loss  # negative because we want to maximize KL divergence
+def div_std(outputs):
+    return -F.softmax(outputs, dim=-1).std(0).mean()
+
+
+def kl_divergence(out1, out2):
+    loss = F.kl_div(torch.log(F.softmax(out1, dim=-1) + 1e-8), F.softmax(out2, dim=-1) + 1e-8, reduction='batchmean')
+    return -loss  # negative because we want to maximize KL divergence
 
 
 # def js_divergence(out1, out2):
@@ -1274,16 +1275,16 @@ def div_var(outputs):
 #     return sinkhorn_dist.mean()
 
 
-# def dis(out, mode="mi", reduction="mean"):
-#     """
-#     Calculate the loss to minimize the mutual information between all pairs of models.
-#     `out` should have shape [MODELS, BATCH, NUM_CLASSES]
-#     """
-#     # Convert logits to probabilities
-#     probs = F.softmax(out, dim=-1)  # Shape: [MODELS, BATCH, NUM_CLASSES]
-#     probs = probs.transpose(0, 1)  # Shape: [BATCH, MODELS, NUM_CLASSES]
+def dis(out, mode="mi", reduction="mean"):
+    """
+    Calculate the loss to minimize the mutual information between all pairs of models.
+    `out` should have shape [MODELS, BATCH, NUM_CLASSES]
+    """
+    # Convert logits to probabilities
+    probs = F.softmax(out, dim=-1)  # Shape: [MODELS, BATCH, NUM_CLASSES]
+    probs = probs.transpose(0, 1)  # Shape: [BATCH, MODELS, NUM_CLASSES]
 
-#     return divdis_loss_forward_impl(probs, mode=mode, reduction=reduction)
+    return divdis_loss_forward_impl(probs, mode=mode, reduction=reduction)
 
 
 # # def dis(out, mode="mi", reduction="mean"):

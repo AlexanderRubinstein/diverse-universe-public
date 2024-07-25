@@ -14,6 +14,7 @@ from stuned.utility.utils import (
     get_project_root_path,
     extract_list_from_huge_string,
     get_with_assert,
+    append_dict
     # raise_unknown,
     # read_json
 )
@@ -53,8 +54,9 @@ from diverse_universe.local_models.utils import (
 #     TrainEvalSwitchModel,
 #     make_train_eval_switch_model,
 #     separate_classifier_and_featurizer,
-    make_model_classes_wrapper,
-    make_to_classes_mapping
+    # make_model_classes_wrapper,
+    # make_to_classes_mapping,
+    get_model
 )
 from diverse_universe.local_models.wrappers import (
     make_mvh_model_wrapper
@@ -93,6 +95,7 @@ sys.path.pop(0)
 # ])
 # IMAGENET_A_JSON = os.path.join(JSON_PATH, "imagenet_a_wnids.json")
 # IMAGENET_R_JSON = os.path.join(JSON_PATH, "imagenet_r_wnids.json")
+HYPERPARAM_PREFIX = "__hyperparam__"
 
 
 # class ModelBuilder(ModelBuilderBase):
@@ -654,40 +657,152 @@ sys.path.pop(0)
 #     return make_model_classes_wrapper(model, make_imagenet_ar_mapper("inr"))
 
 
-def patch_model(model):
-    if is_ensemble(model):
-        model.keep_inactive_on_cpu = False
-        model.latest_device = torch.device("cpu")
-        model.different_devices = False
-        model.random_select = None
-        model.keep_active_indices = False
-        model.active_indices = None
-        model.softmax = torch.nn.Softmax(dim=-1)
-        model.softmax_ensemble = False
-    return model
+# def patch_model(model):
+#     if is_ensemble(model):
+#         model.keep_inactive_on_cpu = False
+#         model.latest_device = torch.device("cpu")
+#         model.different_devices = False
+#         model.random_select = None
+#         model.keep_active_indices = False
+#         model.active_indices = None
+#         model.softmax = torch.nn.Softmax(dim=-1)
+#         model.softmax_ensemble = False
+#     return model
 
 
-def get_model(path, base_model=None):
-    model = torch.load(path)
-    if isinstance(model, dict):
-        if "model" in model:
-            model = get_with_assert(model, "model")
+# def get_model(path, base_model=None):
+#     model = torch.load(path)
+#     if isinstance(model, dict):
+#         if "model" in model:
+#             model = get_with_assert(model, "model")
+#         else:
+#             assert base_model is not None
+#             if "state_dict" in model:
+#                 model = model["state_dict"]
+#             base_model = copy.deepcopy(base_model)
+#             base_model.load_state_dict(model)
+#             model = base_model
+#     model = patch_model(model)
+#     model.to("cpu")
+#     return model
+
+
+# def make_ensembles(paths):
+#     if isinstance(paths, str):
+#         paths = extract_list_from_huge_string(paths)
+#     res = []
+#     for path in paths:
+#         res.append(get_model(path))
+#     return res
+
+
+# def make_models_dict_from_huge_string(huge_string, keys, id_prefix=""):
+#     # TODO(Alex | 02.04.2024): maybe later we can extend it to the whole gsheet
+#     # and update it by adding new columns
+
+#     def make_id(id_prefix, keys, split):
+#         id_name = id_prefix
+#         assert "path" in keys
+#         path = None
+#         properties = {}
+#         for i, (key, value) in enumerate(zip(keys, split)):
+#             if key != "path":
+#                 id_name += key + '_' + value
+#                 if i + 1 != len(keys):
+#                     id_name += '_'
+#                 properties[HYPERPARAM_PREFIX + key] = value
+#             else:
+#                 path = value
+#         return id_name, path, properties
+
+#     res = {}
+#     name_to_prop = {}
+
+#     huge_string = huge_string.replace('\t', ' ').replace('\n', ' ')
+
+#     split = huge_string.split()
+
+#     if keys is None:
+#         assert id_prefix != ""
+#         return {id_prefix: split}, {id_prefix: {}}
+
+#     assert len(split) % len(keys) == 0, \
+#             f"split {split} is not suitable for keys {keys}"
+
+#     current_tuple = []
+#     for item in split:
+
+#         current_tuple.append(item)
+#         if len(current_tuple) < len(keys):
+#             continue
+
+#         id_name, path, properties = make_id(id_prefix, keys, current_tuple)
+
+#         if id_name in name_to_prop:
+#             assert name_to_prop[id_name] == properties
+#         else:
+#             name_to_prop[id_name] = properties
+
+#         assert path is not None
+
+#         append_dict(res, {id_name: path}, allow_new_keys=True)
+
+#         current_tuple = []
+
+#     return res, name_to_prop
+
+
+def make_models_dict_from_huge_string(huge_string, keys, id_prefix=""):
+    # TODO(Alex | 02.04.2024): maybe later we can extend it to the whole gsheet
+    # and update it by adding new columns
+
+    def make_id(id_prefix, keys, split):
+        id_name = id_prefix
+        assert "path" in keys
+        path = None
+        properties = {}
+        for i, (key, value) in enumerate(zip(keys, split)):
+            if key != "path":
+                id_name += key + '_' + value
+                if i + 1 != len(keys):
+                    id_name += '_'
+                properties[HYPERPARAM_PREFIX + key] = value
+            else:
+                path = value
+        return id_name, path, properties
+
+    res = {}
+    name_to_prop = {}
+
+    huge_string = huge_string.replace('\t', ' ').replace('\n', ' ')
+
+    split = huge_string.split()
+
+    if keys is None:
+        assert id_prefix != ""
+        return {id_prefix: split}, {id_prefix: {}}
+
+    assert len(split) % len(keys) == 0, \
+            f"split {split} is not suitable for keys {keys}"
+
+    current_tuple = []
+    for item in split:
+
+        current_tuple.append(item)
+        if len(current_tuple) < len(keys):
+            continue
+
+        id_name, path, properties = make_id(id_prefix, keys, current_tuple)
+
+        if id_name in name_to_prop:
+            assert name_to_prop[id_name] == properties
         else:
-            assert base_model is not None
-            if "state_dict" in model:
-                model = model["state_dict"]
-            base_model = copy.deepcopy(base_model)
-            base_model.load_state_dict(model)
-            model = base_model
-    model = patch_model(model)
-    model.to("cpu")
-    return model
+            name_to_prop[id_name] = properties
 
+        assert path is not None
 
-def make_ensembles(paths):
-    if isinstance(paths, str):
-        paths = extract_list_from_huge_string(paths)
-    res = []
-    for path in paths:
-        res.append(get_model(path))
-    return res
+        append_dict(res, {id_name: path}, allow_new_keys=True)
+
+        current_tuple = []
+
+    return res, name_to_prop

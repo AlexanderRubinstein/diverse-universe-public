@@ -32,9 +32,12 @@ from diverse_universe.local_datasets.utils import (
 # )
 from diverse_universe.local_models.common import (
     # make_ensemble_from_model_list,
-    wrap_model,
-    # get_model,
+    get_model,
     make_ensembles
+)
+from diverse_universe.local_models.wrappers import (
+    # make_ensemble_from_model_list,
+    wrap_model
 )
 # from utility.logger import (
 #     log_or_print
@@ -42,6 +45,14 @@ from diverse_universe.local_models.common import (
 # from train_eval.models import (
 #     is_ensemble
 # )
+from diverse_universe.local_models.ensemble import (
+    # REDNECK_ENSEMBLE_KEY,
+    # SINGLE_MODEL_KEY,
+    # POE_KEY,
+    is_ensemble,
+    # make_redneck_ensemble,
+    # split_linear_layer
+)
 from diverse_universe.train_eval import (
     METRICS
 )

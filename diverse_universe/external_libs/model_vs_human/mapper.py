@@ -8,8 +8,8 @@
 # )
 
 
-# def get_human_categories():
-#     return hc.HumanCategories()
+def get_human_categories():
+    return HumanCategories()
 
 
 # def get_human_object_recognition_categories():

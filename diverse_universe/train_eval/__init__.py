@@ -1,4 +1,4 @@
-from losses import (
+from .losses import (
     kl_divergence,
     div_var,
     div_std,

@@ -6,9 +6,9 @@
     "configurations": [
         {
             "name": "Python: cross_eval: main.py",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
-            "program": "./src/diverse_universe/cross_eval/main.py",
+            "program": "./diverse_universe/cross_eval/main.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [

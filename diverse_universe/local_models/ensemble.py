@@ -8,6 +8,7 @@ import torch.nn as nn
 from stuned.utility.utils import (
     aggregate_tensors_by_func,
     func_for_dim,
+    extract_list_from_huge_string
 #     apply_random_seed
 )
 
@@ -20,7 +21,9 @@ from diverse_universe.local_models.baselines import (
 )
 from diverse_universe.local_models.utils import (
     ModelClassesWrapper,
-    unrequire_grads
+    unrequire_grads,
+    get_model,
+    make_model_builder_from_list
 )
 from diverse_universe.local_datasets.utils import (
     get_probs
@@ -339,32 +342,32 @@ class RedneckEnsemble(nn.Module):
         return outputs
 
 
-# def make_redneck_ensemble(
-#     n_models,
-#     base_model_builder,
-#     weights=None,
-#     single_model_per_epoch=False,
-#     identical=False,
-#     feature_extractor=None,
-#     product_of_experts=False,
-#     random_select=None,
-#     keep_inactive_on_cpu=False,
-#     split_last_linear_layer=False,
-#     freeze_feature_extractor=True
-# ):
-#     return RedneckEnsemble(
-#         n_models,
-#         base_model_builder,
-#         weights,
-#         single_model_per_epoch,
-#         identical,
-#         feature_extractor,
-#         product_of_experts,
-#         random_select=random_select,
-#         keep_inactive_on_cpu=keep_inactive_on_cpu,
-#         split_last_linear_layer=split_last_linear_layer,
-#         freeze_feature_extractor=freeze_feature_extractor
-#     )
+def make_redneck_ensemble(
+    n_models,
+    base_model_builder,
+    weights=None,
+    single_model_per_epoch=False,
+    identical=False,
+    feature_extractor=None,
+    product_of_experts=False,
+    random_select=None,
+    keep_inactive_on_cpu=False,
+    split_last_linear_layer=False,
+    freeze_feature_extractor=True
+):
+    return RedneckEnsemble(
+        n_models,
+        base_model_builder,
+        weights,
+        single_model_per_epoch,
+        identical,
+        feature_extractor,
+        product_of_experts,
+        random_select=random_select,
+        keep_inactive_on_cpu=keep_inactive_on_cpu,
+        split_last_linear_layer=split_last_linear_layer,
+        freeze_feature_extractor=freeze_feature_extractor
+    )
 
 
 def normalize_weights(weights, p=2):
@@ -409,3 +412,60 @@ def compute_ensemble_output(
         ],
         func=func_for_dim(torch.mean, dim=0)
     ).squeeze(0)
+
+
+def make_ensembles_from_paths(paths, group_by, num_ensembles, base_model=None):
+    paths = extract_list_from_huge_string(paths)
+    total_paths = len(paths)
+    assert total_paths >= num_ensembles
+    assert total_paths >= group_by
+
+    indices_per_ensemble = []
+
+    # select indices
+    for j in range(num_ensembles):
+        indices_per_ensemble.append(
+            set(random.sample(list(range(total_paths)), group_by))
+        )
+
+    res = [[] for _ in range(num_ensembles)]
+
+    for i, path in enumerate(paths):
+        for j in range(len(indices_per_ensemble)):
+            if i in indices_per_ensemble[j]:
+                res[j].append(get_ensemble(path, base_model=base_model))
+
+    return [make_ensemble_from_model_list(model_list) for model_list in res]
+
+
+def make_ensemble_from_model_list(list_of_models):
+    return make_redneck_ensemble(
+        len(list_of_models),
+        make_model_builder_from_list(list_of_models)
+    )
+
+
+def get_ensemble(path, base_model=None):
+    return get_model(path, base_model=base_model, patch_model=patch_ensemble)
+
+
+def patch_ensemble(model):
+    if is_ensemble(model):
+        model.keep_inactive_on_cpu = False
+        model.latest_device = torch.device("cpu")
+        model.different_devices = False
+        model.random_select = None
+        model.keep_active_indices = False
+        model.active_indices = None
+        model.softmax = torch.nn.Softmax(dim=-1)
+        model.softmax_ensemble = False
+    return model
+
+
+def make_ensembles(paths):
+    if isinstance(paths, str):
+        paths = extract_list_from_huge_string(paths)
+    res = []
+    for path in paths:
+        res.append(get_model(path))
+    return res

@@ -4,7 +4,11 @@ import torch
 # import timm
 # import torchvision
 # import torch.nn.functional as F
-# import copy
+import copy
+from stuned.utility.utils import (
+    get_with_assert,
+    append_dict
+)
 
 
 # # local modules
@@ -27,6 +31,7 @@ import torch
 
 INNER_OBJECT_KEY = "ModuleDelegatingWrapper_inner_object"
 CUSTOM_ATTRS_KEY = "ModuleDelegatingWrapper_custom_attrs"
+# HYPERPARAM_PREFIX = "__hyperparam__"
 
 
 # class TrainEvalSwitchModel(torch.nn.Module, ChildrenForPicklingPreparer):
@@ -355,3 +360,98 @@ def make_to_classes_mapping(indices_for_category, aggregation_function=torch.mea
 class ModelBuilderBase:
     def build(self):
         raise NotImplementedError()
+
+
+class ModelBuilderFromList(ModelBuilderBase):
+
+    def __init__(self, list_of_models):
+        self.list_of_models = list_of_models
+        self.total_models = len(self.list_of_models)
+        self.num_returned_models = 0
+        for model in list_of_models:
+            assert isinstance(model, torch.nn.Module)
+
+    def build(self):
+        assert self.num_returned_models < self.total_models, \
+            "Already returned all models from the list."
+        model = self.list_of_models[self.num_returned_models]
+        self.num_returned_models += 1
+        return model
+
+
+def get_model(path, base_model=None, patch_model=None):
+    model = torch.load(path)
+    if isinstance(model, dict):
+        if "model" in model:
+            model = get_with_assert(model, "model")
+        else:
+            assert base_model is not None
+            if "state_dict" in model:
+                model = model["state_dict"]
+            base_model = copy.deepcopy(base_model)
+            base_model.load_state_dict(model)
+            model = base_model
+    if patch_model is not None:
+        model = patch_model(model)
+    model.to("cpu")
+    return model
+
+
+def make_model_builder_from_list(list_of_models):
+    return ModelBuilderFromList(list_of_models)
+
+
+# def make_models_dict_from_huge_string(huge_string, keys, id_prefix=""):
+#     # TODO(Alex | 02.04.2024): maybe later we can extend it to the whole gsheet
+#     # and update it by adding new columns
+
+#     def make_id(id_prefix, keys, split):
+#         id_name = id_prefix
+#         assert "path" in keys
+#         path = None
+#         properties = {}
+#         for i, (key, value) in enumerate(zip(keys, split)):
+#             if key != "path":
+#                 id_name += key + '_' + value
+#                 if i + 1 != len(keys):
+#                     id_name += '_'
+#                 properties[HYPERPARAM_PREFIX + key] = value
+#             else:
+#                 path = value
+#         return id_name, path, properties
+
+#     res = {}
+#     name_to_prop = {}
+
+#     huge_string = huge_string.replace('\t', ' ').replace('\n', ' ')
+
+#     split = huge_string.split()
+
+#     if keys is None:
+#         assert id_prefix != ""
+#         return {id_prefix: split}, {id_prefix: {}}
+
+#     assert len(split) % len(keys) == 0, \
+#             f"split {split} is not suitable for keys {keys}"
+
+#     current_tuple = []
+#     for item in split:
+
+#         current_tuple.append(item)
+#         if len(current_tuple) < len(keys):
+#             continue
+
+#         id_name, path, properties = make_id(id_prefix, keys, current_tuple)
+
+#         if id_name in name_to_prop:
+#             assert name_to_prop[id_name] == properties
+#         else:
+#             name_to_prop[id_name] = properties
+
+#         assert path is not None
+
+#         append_dict(res, {id_name: path}, allow_new_keys=True)
+
+#         current_tuple = []
+
+#     return res, name_to_prop
