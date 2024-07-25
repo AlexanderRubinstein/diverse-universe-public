@@ -714,3 +714,92 @@ def apply_pairwise(iterable, func):
     for a, b in pairs:
         res.append(func(a, b))
     return res
+
+
+# def get_validation_dataloaders(
+#     train_batch_size,
+#     eval_batch_size,
+#     easy_robust_config,
+#     num_workers,
+#     eval_transform,
+#     logger,
+#     get_val_dataloader=??
+# ):
+#     dataset_types = get_with_assert(easy_robust_config, "dataset_types")
+
+#     val_dataloaders = {}
+
+#     if eval_transform is None:
+#         eval_transform = make_default_test_transforms_imagenet()
+
+#     for dataset_type in dataset_types:
+#         assert dataset_type not in val_dataloaders, "Duplicate dataset type"
+#         if dataset_type in ["imagenet_a", "imagenet_r", "imagenet_v2"]:
+#             val_dataloaders[dataset_type] = get_imagenet_arv2_dataloader(
+#                 train_batch_size=train_batch_size,
+#                 eval_batch_size=eval_batch_size,
+#                 easyrobust_config=easy_robust_config,
+#                 num_workers=num_workers,
+#                 eval_transform=eval_transform,
+#                 logger=logger,
+#                 dataset_type=dataset_type
+#             )
+#         elif dataset_type == "imagenet_hard":
+#             val_dataloaders[dataset_type] = get_imagenet_hard_dataloader(
+#                 train_batch_size=train_batch_size,
+#                 eval_batch_size=eval_batch_size,
+#                 easyrobust_config=easy_robust_config,
+#                 num_workers=num_workers,
+#                 eval_transform=eval_transform,
+#                 logger=logger
+#             )
+#         elif dataset_type == "imagenet_c":
+#             val_dataloaders |= get_imagenet_c_dataloader(
+#                 train_batch_size,
+#                 eval_batch_size,
+#                 easy_robust_config,
+#                 num_workers,
+#                 eval_transform,
+#                 logger
+#             )
+#         elif dataset_type == "openimages":
+#             val_dataloaders[dataset_type] = get_openimages_dataloader(
+#                 train_batch_size,
+#                 eval_batch_size,
+#                 easy_robust_config,
+#                 num_workers,
+#                 eval_transform,
+#                 logger
+#             )
+#         elif dataset_type == "from_folder":
+#             val_dataloaders |= get_from_folder_dataloader(
+#                 train_batch_size,
+#                 eval_batch_size,
+#                 easy_robust_config,
+#                 num_workers,
+#                 eval_transform,
+#                 logger
+#             )
+#         elif dataset_type == "imagenet_d":
+#             val_dataloaders |= get_imagenet_d_dataloaders(
+#                 train_batch_size,
+#                 eval_batch_size,
+#                 easy_robust_config,
+#                 num_workers,
+#                 eval_transform,
+#                 logger
+#             )
+#         else:
+#             raise_unknown(
+#                 "dataset type",
+#                 dataset_type,
+#                 "easy_robust_config"
+#             )
+#     return None, val_dataloaders
+
+
+def ood_detection_only_warning(logger):
+    logger.error(
+        "All images have label 0 here. "
+        "This dataloader is purely for OOD detection."
+    )

@@ -16,9 +16,9 @@ from stuned.utility.logger import (
     make_logger,
     try_to_log_in_csv
 )
-from stuned.local_datasets.imagenet1k import (
-    IMAGENET_TRAIN_NUM_SAMPLES
-)
+# from stuned.local_datasets.imagenet1k import (
+#     IMAGENET_TRAIN_NUM_SAMPLES
+# )
 from stuned.utility.configs import (
     RUN_PATH_CONFIG_KEY
 )
@@ -132,7 +132,11 @@ from diverse_universe.local_datasets.wilds import (
 # from stuned.utility.configs import (
 #     RUN_PATH_CONFIG_KEY
 # )
-from diverse_universe.local_datasets.easy_robust import (
+# from diverse_universe.local_datasets.easy_robust import (
+#     IN_C_DATALOADERS_NAMES,
+#     extract_in_c_paths
+# )
+from diverse_universe.local_datasets.imagenet_c import (
     IN_C_DATALOADERS_NAMES,
     extract_in_c_paths
 )

@@ -1,6 +1,7 @@
 # root auxilary folders
 models
 envs
+experiments
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

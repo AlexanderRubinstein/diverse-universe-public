@@ -16,7 +16,8 @@ from stuned.local_datasets.utils import (
     # make_or_load_from_cache
 )
 from stuned.local_datasets.transforms import (
-    make_transforms
+    make_transforms,
+    make_default_test_transforms_imagenet
 )
 # from stuned.local_datasets.features_labeller import (
 #     make_features_labeller,
@@ -61,6 +62,12 @@ sys.path.insert(
 from diverse_universe.local_datasets.wilds import (
     get_wilds_dataloaders
 )
+from diverse_universe.local_datasets.imagenet_c import (
+    get_imagenet_c_dataloader
+)
+from diverse_universe.local_datasets.openimages import (
+    get_openimages_dataloader
+)
 # from local_datasets.utils import (
 #     TRAIN_KEY,
 #     randomly_subsampled_dataloader,
@@ -89,11 +96,12 @@ from diverse_universe.local_datasets.model_vs_human import (
 from diverse_universe.local_datasets.from_h5 import (
     FROM_H5,
     MAX_CHUNK_SIZE,
-    # get_h5_dataloaders
+    get_h5_dataloaders
 )
-# from local_datasets.easy_robust import (
-#     get_easy_robust_dataloaders
-# )
+from diverse_universe.local_datasets.easy_robust import (
+    # get_easy_robust_dataloaders
+    get_imagenet_arv2_dataloader
+)
 # from local_models.utils import (
 #     separate_classifier_and_featurizer
 # )
@@ -409,10 +417,12 @@ def get_dataloaders_for_type(
             logger=logger
         )
 
-    elif dataset_type == "easy_robust":
+    # elif dataset_type == "easy_robust":
+    elif dataset_type == "validation_only":
         assert train_batch_size == 0, \
             "train_batch_size should be 0 for easyrobust"
-        trainloader, testloaders = get_easy_robust_dataloaders(
+        # trainloader, testloaders = get_easy_robust_dataloaders(
+        trainloader, testloaders = get_validation_only_dataloaders(
             train_batch_size,
             eval_batch_size,
             easy_robust_config=specific_dataset_config,
@@ -587,3 +597,81 @@ def make_cached_dataloaders(dataloaders_dict, batch_size=32):
             num_workers=0  # should be 0 for hdf5
         )
     return dataloaders
+
+
+def get_validation_only_dataloaders(
+    train_batch_size,
+    eval_batch_size,
+    easy_robust_config,
+    num_workers,
+    eval_transform,
+    logger,
+):
+    dataset_types = get_with_assert(easy_robust_config, "dataset_types")
+
+    val_dataloaders = {}
+
+    if eval_transform is None:
+        eval_transform = make_default_test_transforms_imagenet()
+
+    for dataset_type in dataset_types:
+        assert dataset_type not in val_dataloaders, "Duplicate dataset type"
+        if dataset_type in ["imagenet_a", "imagenet_r", "imagenet_v2"]:
+            val_dataloaders[dataset_type] = get_imagenet_arv2_dataloader(
+                eval_batch_size=eval_batch_size,
+                easyrobust_config=easy_robust_config,
+                num_workers=num_workers,
+                eval_transform=eval_transform,
+                logger=logger,
+                dataset_type=dataset_type
+            )
+        # elif dataset_type == "imagenet_hard":
+        #     val_dataloaders[dataset_type] = get_imagenet_hard_dataloader(
+        #         train_batch_size=train_batch_size,
+        #         eval_batch_size=eval_batch_size,
+        #         easyrobust_config=easy_robust_config,
+        #         num_workers=num_workers,
+        #         eval_transform=eval_transform,
+        #         logger=logger
+        #     )
+        elif dataset_type == "imagenet_c":
+            val_dataloaders |= get_imagenet_c_dataloader(
+                eval_batch_size,
+                easy_robust_config,
+                num_workers,
+                eval_transform,
+                logger
+            )
+        elif dataset_type == "openimages":
+            val_dataloaders[dataset_type] = get_openimages_dataloader(
+                eval_batch_size,
+                easy_robust_config,
+                num_workers,
+                eval_transform,
+                logger
+            )
+        # elif dataset_type == "from_folder":
+        #     val_dataloaders |= get_from_folder_dataloader(
+        #         train_batch_size,
+        #         eval_batch_size,
+        #         easy_robust_config,
+        #         num_workers,
+        #         eval_transform,
+        #         logger
+        #     )
+        # elif dataset_type == "imagenet_d":
+        #     val_dataloaders |= get_imagenet_d_dataloaders(
+        #         train_batch_size,
+        #         eval_batch_size,
+        #         easy_robust_config,
+        #         num_workers,
+        #         eval_transform,
+        #         logger
+        #     )
+        else:
+            raise_unknown(
+                "dataset type",
+                dataset_type,
+                "easy_robust_config"
+            )
+    return None, val_dataloaders
