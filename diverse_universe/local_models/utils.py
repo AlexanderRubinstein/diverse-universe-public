@@ -7,7 +7,7 @@ import torch
 import copy
 from stuned.utility.utils import (
     get_with_assert,
-    append_dict
+    # append_dict
 )
 
 

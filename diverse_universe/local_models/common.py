@@ -1,15 +1,16 @@
 import os
 import sys
 import torch
-# import torchvision
-# from torchvision import models
-# from torchvision.models.resnet import (
-#     ResNet,
-#     ResNet50_Weights,
-#     ResNet18_Weights
-# )
+import torchvision
+from torchvision import models
+from torchvision.models.resnet import (
+    ResNet,
+    ResNet50_Weights,
+    ResNet18_Weights
+)
 import timm
 import copy
+import torch.nn.functional as F
 from stuned.utility.utils import (
     get_project_root_path,
     get_with_assert,
@@ -21,17 +22,23 @@ from stuned.utility.utils import (
 from stuned.utility.logger import (
     make_logger
 )
+from stuned.utility.helpers_for_tests import (
+    make_dummy_object
+)
 
 
 # local modules
 sys.path.insert(0, get_project_root_path())
 from diverse_universe.local_models.ensemble import (
     REDNECK_ENSEMBLE_KEY,
-    # SINGLE_MODEL_KEY,
-    # POE_KEY,
+    SINGLE_MODEL_KEY,
+    POE_KEY,
+    make_redneck_ensemble,
     # is_ensemble,
-    # make_redneck_ensemble,
     # split_linear_layer
+)
+from diverse_universe.local_models.wrappers import (
+    wrap_model
 )
 # from utility.logger import (
 #     make_logger
@@ -62,15 +69,16 @@ from diverse_universe.local_models.utils import (
     # make_model_classes_wrapper,
     # make_to_classes_mapping,
 )
-from diverse_universe.local_models.wrappers import (
-    make_mvh_model_wrapper
-)
-# from local_models.baselines import (
-#     is_mlp,
-#     make_mlp
+# from diverse_universe.local_models.wrappers import (
+#     make_mvh_model_wrapper
 # )
-from diverse_universe.local_models.beyond_in import (
-    load_model_transform
+from diverse_universe.local_models.baselines import (
+    is_mlp,
+    make_mlp
+)
+from diverse_universe.local_models.deit3 import (
+    vit_models,
+    load_model_transform,
 )
 # from local_datasets.utils import (
 #     JSON_PATH
@@ -80,7 +88,7 @@ sys.path.pop(0)
 
 
 RESNET_DEFAULT_N_CHANNELS = 3
-# RESNET_DEFAULT_N_CLASSES = 1000
+RESNET_DEFAULT_N_CLASSES = 1000
 # IN9_MAPPING_PATH = os.path.join(
 #     get_project_root_path(),
 #     "json",
@@ -214,39 +222,39 @@ class ModelBuilder(ModelBuilderBase):
 
         return model
 
-    def _build_diverse_vit(self):
-        return make_diverse_vit(self.model_specific_config)
+    # def _build_diverse_vit(self):
+    #     return make_diverse_vit(self.model_specific_config)
 
     def _build_mlp(self):
         return make_mlp(**self.model_specific_config)
 
-    def _build_diverse_vit_switch_ensemble(self):
-        assert hasattr(self, "diverse_vit_builder")
-        assert hasattr(self, "head_indices_list")
+    # def _build_diverse_vit_switch_ensemble(self):
+    #     assert hasattr(self, "diverse_vit_builder")
+    #     assert hasattr(self, "head_indices_list")
 
-        diverse_vit = self.diverse_vit_builder.build()
+    #     diverse_vit = self.diverse_vit_builder.build()
 
-        if self.head_indices_list:
-            for head_indices in self.head_indices_list:
-                assert any(head_indices), \
-                    f"At least one head should be used, " \
-                    f"while given head indices are all False: {head_indices}"
-        else:
-            # Extract the number of heads from the diverse_vit instance
-            num_heads = diverse_vit.vit.last_attn_num_heads
-            self.head_indices_list = []
-            # Use all heads
-            self.head_indices_list.append([True] * num_heads)
-            # Use one head at a time
-            for head_idx  in range(num_heads):
-                head_indices = [False] * num_heads
-                head_indices[head_idx] = True
-                self.head_indices_list.append(head_indices)
+    #     if self.head_indices_list:
+    #         for head_indices in self.head_indices_list:
+    #             assert any(head_indices), \
+    #                 f"At least one head should be used, " \
+    #                 f"while given head indices are all False: {head_indices}"
+    #     else:
+    #         # Extract the number of heads from the diverse_vit instance
+    #         num_heads = diverse_vit.vit.last_attn_num_heads
+    #         self.head_indices_list = []
+    #         # Use all heads
+    #         self.head_indices_list.append([True] * num_heads)
+    #         # Use one head at a time
+    #         for head_idx  in range(num_heads):
+    #             head_indices = [False] * num_heads
+    #             head_indices[head_idx] = True
+    #             self.head_indices_list.append(head_indices)
 
-        return make_diverse_vit_switch_ensemble(
-            diverse_vit,
-            self.head_indices_list
-        )
+    #     return make_diverse_vit_switch_ensemble(
+    #         diverse_vit,
+    #         self.head_indices_list
+    #     )
 
     def _build_resnet18(self):
         return self._build_resnet_n(
@@ -810,3 +818,172 @@ def make_models_dict_from_huge_string(huge_string, keys, id_prefix=""):
         current_tuple = []
 
     return res, name_to_prop
+
+
+def assert_block_idx(block_idx, model):
+    assert block_idx == -1  # TODO(Alex | 15.02.2024): relax requirement?
+    # assert block_idx < 0
+    # assert abs(block_idx) < len(model.blocks)
+
+
+class TimmVitFinalLayers(torch.nn.Module):
+
+    def __init__(self, model, block_idx):
+        super().__init__()
+        assert_block_idx(block_idx, model)
+
+        last_block = model.blocks[block_idx]
+        self.drop_path = last_block.drop_path
+        self.gamma_2 = last_block.gamma_2
+        self.mlp = last_block.mlp
+        self.norm2 = last_block.norm2
+
+        self.norm = model.norm
+        self.dropout_rate = model.dropout_rate
+        self.head = model.head
+
+    def forward(self, x, pre_logits=False):
+
+        x = x + self.drop_path(self.gamma_2 * self.mlp(self.norm2(x)))
+
+        x = self.norm(x)
+        # x = x[:, 0]
+        if self.dropout_rate:
+            x = F.dropout(x,
+                          p=float(self.dropout_rate),
+                          training=self.training)
+        return x if pre_logits else self.head(x)
+
+
+class TimmVitFeaturesWrapper(torch.nn.Module):
+
+    def __init__(self, model):
+        super().__init__()
+        self.model = model
+        self.model.head = None
+
+    def forward(self, x):
+        x = self.model.forward_features(x)
+        x = self.model.forward_head(x, pre_logits=True)
+        return x
+
+
+class TimmVitPartialBlocks(torch.nn.Module):
+
+    def __init__(self, model, block_idx):
+        super().__init__()
+        assert_block_idx(block_idx, model)
+        self.blocks = model.blocks[:block_idx]
+        self.patch_embed = model.patch_embed
+        self.cls_token = model.cls_token
+        self.pos_embed = model.pos_embed
+
+        last_block = model.blocks[block_idx]
+        self.attn = last_block.attn
+        self.gamma_1 = last_block.gamma_1
+        self.norm1 = last_block.norm1
+        self.drop_path = last_block.drop_path
+
+
+    def forward(self, x):
+        B = x.shape[0]
+        x = self.patch_embed(x)
+
+        cls_tokens = self.cls_token.expand(B, -1, -1)
+
+        x = x + self.pos_embed
+
+        x = torch.cat((cls_tokens, x), dim=1)
+
+        for i, blk in enumerate(self.blocks):
+            x = blk(x)
+
+        x = x + self.drop_path(self.gamma_1 * self.attn(self.norm1(x)))
+        return x[:, 0]  # only cls token to save space by 197 times
+
+
+class ResNetPartialBlocks(torch.nn.Module):
+
+    def __init__(self, model, block_id, is_classifier=True):
+        super().__init__()
+        blocks = torch.nn.ModuleList()
+        for i, layer in enumerate(model.children()):
+            blocks.append(layer)
+
+        self.is_classifier = is_classifier
+
+        if self.is_classifier:
+            self.blocks = blocks[block_id:]
+        else:
+            self.blocks = blocks[:block_id]
+
+    def forward(self, x):
+
+        for i, block in enumerate(self.blocks):
+
+            if self.is_classifier and i + 1 == len(self.blocks):
+                x = x.squeeze(-1).squeeze(-1)
+            x = block(x)
+
+        return x
+
+
+def separate_classifier_and_featurizer(
+    original_model,
+    block_id=None,
+    copy_model=True
+):
+
+    def model_modified_exception():
+        raise Exception("Model modified by separate_classifier_and_featurizer")
+
+    def is_timm_vit(model):
+        return isinstance(
+            model,
+            (
+                timm.models.vision_transformer.VisionTransformer,
+                vit_models
+            )
+        )
+
+    if copy_model:
+        model = copy.deepcopy(original_model)
+    else:
+        model = original_model
+
+    if block_id is not None:
+        assert (
+                is_timm_vit(model)
+            or
+                isinstance(model, torchvision.models.resnet.ResNet)
+        )
+
+    if is_mlp(model):
+        featurizer = model
+        classifier = make_dummy_object()
+        classifier.in_features = featurizer.out_features
+    elif is_timm_vit(model):
+        if block_id is not None:
+            classifier = TimmVitFinalLayers(model, block_id)
+            featurizer = TimmVitPartialBlocks(model, block_id)
+            # model.forward = lambda x: model_modified_exception()
+        else:
+            classifier = model.head
+            featurizer = TimmVitFeaturesWrapper(model)
+            model.forward = lambda x: model_modified_exception()
+    elif isinstance(model, torchvision.models.resnet.ResNet):
+        if block_id is not None:
+            classifier = ResNetPartialBlocks(model, block_id, is_classifier=True)
+            featurizer = ResNetPartialBlocks(model, block_id, is_classifier=False)
+        else:
+            assert copy_model
+            classifier = model.fc
+            featurizer = model
+            featurizer.fc = torch.nn.Identity()
+    else:
+        raise_unknown(
+            "model type",
+            type(model),
+            "separate_classifier_and_featurizer"
+        )
+    return featurizer, classifier

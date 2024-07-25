@@ -18,7 +18,7 @@ import contextlib
 #     profile,
 #     ProfilerActivity
 # )
-import copy
+# import copy
 from stuned.utility.utils import (
     get_project_root_path,
     log_or_print,
@@ -96,6 +96,11 @@ from diverse_universe.local_models.common import (
     # check_model,
     # wrap_model
 )
+from diverse_universe.train.optimizer import (
+    make_nan_checking_optimizer,
+    make_optimizer,
+    make_lr_scheduler
+)
 # from local_algorithms.div_dis import (
 #     DIV_DIS_LOSS_NAMES,
 #     DIV_DIS_Y_PRED_KEY,
@@ -117,6 +122,9 @@ from diverse_universe.local_models.common import (
 #     check_criterion,
 #     requires_input_gradient
 # )
+from diverse_universe.train.losses import (
+    make_criterion
+)
 from diverse_universe.train.metrics import make_metric
 # from train_eval.utils import (
 #     make_optimizer,
@@ -136,7 +144,7 @@ from diverse_universe.local_datasets.common import (
 # )
 from diverse_universe.train.configs import (
     DEFAULT_SETUP,
-    WILDS_SETUP
+    # WILDS_SETUP
 )
 # from local_models.diverse_vit import is_diverse_vit_output
 # from utility.imports import (
@@ -444,9 +452,10 @@ def train_eval_loop(
             # in prepare_for_unpickling for each torch.nn.Module in checkpoint
             run_folder = experiment_config[RUN_PATH_CONFIG_KEY]
             checkpoint_to_save = (
-                copy.deepcopy(checkpoint)
-                    if setup == WILDS_SETUP
-                        else checkpoint
+                # copy.deepcopy(checkpoint)
+                #     if setup == WILDS_SETUP
+                #         else checkpoint
+                checkpoint
             )
             save_checkpoint(
                 checkpoint_to_save,
@@ -760,20 +769,20 @@ def run_epoch(
         "has_metadata"
     )
 
-    if setup == WILDS_SETUP:
+    # if setup == WILDS_SETUP:
 
-        algorithm = checkpoint["algorithm"]
+    #     algorithm = checkpoint["algorithm"]
 
-        if has_metadata:
-            epoch_y_pred = []
-            epoch_y_true = []
-            epoch_metadata = []
+    #     if has_metadata:
+    #         epoch_y_pred = []
+    #         epoch_y_true = []
+    #         epoch_metadata = []
 
-        gradient_accumulation_steps \
-            = algorithm.config.gradient_accumulation_steps
-        log_every = algorithm.config.log_every
+    #     gradient_accumulation_steps \
+    #         = algorithm.config.gradient_accumulation_steps
+    #     log_every = algorithm.config.log_every
 
-    at_least_one_off_diag = False
+    # at_least_one_off_diag = False
     if is_train or stage_name == EVAL_ON_TRAIN_LOGS_NAME:
         train_config = get_with_assert(params_config, "train")
         off_diag_supervision = train_config.get("off_diag_supervision")
@@ -1057,15 +1066,15 @@ def run_epoch(
         only_mean=(not batchwise_statistics)
     )
 
-    if setup == WILDS_SETUP and has_metadata:
-        dataset = dataloader.dataset
-        epoch_y_pred = collate_list(epoch_y_pred)
-        epoch_y_true = collate_list(epoch_y_true)
-        epoch_metadata = collate_list(epoch_metadata)
-        _, results_str = dataset.eval(
-            epoch_y_pred, epoch_y_true, epoch_metadata
-        )
-        logger.log(results_str)
+    # if setup == WILDS_SETUP and has_metadata:
+    #     dataset = dataloader.dataset
+    #     epoch_y_pred = collate_list(epoch_y_pred)
+    #     epoch_y_true = collate_list(epoch_y_true)
+    #     epoch_metadata = collate_list(epoch_metadata)
+    #     _, results_str = dataset.eval(
+    #         epoch_y_pred, epoch_y_true, epoch_metadata
+    #     )
+    #     logger.log(results_str)
 
     if not batchwise_statistics and use_wandb:
 
@@ -1108,9 +1117,10 @@ def run_epoch(
         if setup == DEFAULT_SETUP:
             make_scheduler_step(lr_scheduler, epoch_stats[stage_name])
         else:
-            assert setup == WILDS_SETUP
-            algorithm.step_schedulers(
-                is_epoch=True, metrics=metrics, log_access=False
+            raise_unknown(
+                "setup for making scheduler step",
+                setup,
+                "run_epoch"
             )
 
     checkpoint["current_epoch"] = epoch
@@ -1269,7 +1279,7 @@ def prepare_setup_default(
             "optimizer",
             checkpoint,
             train_config,
-            check_optimizer,
+            None,
             make_optimizer,
             param_container=model,
             wrapping_function=wrapping_function
@@ -1280,7 +1290,7 @@ def prepare_setup_default(
                 "lr_scheduler",
                 checkpoint,
                 optimizer_config,
-                check_lr_scheduler,
+                None,
                 make_lr_scheduler,
                 optimizer=optimizer,
                 max_epochs=train_config["n_epochs"]
@@ -1290,7 +1300,7 @@ def prepare_setup_default(
             "criterion",
             checkpoint,
             train_config,
-            check_criterion,
+            None,
             make_criterion,
             cache_path=cache_path,
             logger=logger,
