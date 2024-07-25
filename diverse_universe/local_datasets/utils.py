@@ -38,6 +38,7 @@ from stuned.utility.utils import (
 FONT_SIZE = 48
 JSON_PATH = os.path.join(
     get_project_root_path(),
+    "diverse_universe",
     "json"
 )
 ADJUSTED_GROUPWISE_KEY = "_adjusted"

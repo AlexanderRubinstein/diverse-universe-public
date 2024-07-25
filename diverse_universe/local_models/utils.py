@@ -315,41 +315,41 @@ class ModelClassesWrapper(ModuleDelegatingWrapper):
         return mapper(probs)
 
 
-# def make_model_classes_wrapper(model, make_mapper):
-#     return ModelClassesWrapper(model, make_mapper)
+def make_model_classes_wrapper(model, make_mapper):
+    return ModelClassesWrapper(model, make_mapper)
 
 
-# # based on https://github.com/bethgelab/model-vs-human/blob/master/modelvshuman/datasets/decision_mappings.py
-# class ToClassesMapping:
+# based on https://github.com/bethgelab/model-vs-human/blob/master/modelvshuman/datasets/decision_mappings.py
+class ToClassesMapping:
 
-#     def __init__(self, indices_for_category, aggregation_function=torch.mean):
+    def __init__(self, indices_for_category, aggregation_function=torch.mean):
 
-#         self.aggregation_function = aggregation_function
-#         self.indices_for_category = indices_for_category
+        self.aggregation_function = aggregation_function
+        self.indices_for_category = indices_for_category
 
-#     def check_input(self, probabilities):
-#         assert (probabilities >= 0.0).all() and (probabilities <= 1.0).all()
+    def check_input(self, probabilities):
+        assert (probabilities >= 0.0).all() and (probabilities <= 1.0).all()
 
-#     def __call__(self, probabilities):
+    def __call__(self, probabilities):
 
-#         aggregated_class_probabilities = []
+        aggregated_class_probabilities = []
 
-#         for category in self.categories:
-#             indices = self.indices_for_category(category)
-#             values = probabilities[:, indices]
-#             aggregated_value = self.aggregation_function(values, axis=-1)
-#             aggregated_class_probabilities.append(aggregated_value.unsqueeze(1))
+        for category in self.categories:
+            indices = self.indices_for_category(category)
+            values = probabilities[:, indices]
+            aggregated_value = self.aggregation_function(values, axis=-1)
+            aggregated_class_probabilities.append(aggregated_value.unsqueeze(1))
 
-#         aggregated_class_probabilities = torch.cat(
-#             aggregated_class_probabilities,
-#             dim=1
-#         )
+        aggregated_class_probabilities = torch.cat(
+            aggregated_class_probabilities,
+            dim=1
+        )
 
-#         return aggregated_class_probabilities
+        return aggregated_class_probabilities
 
 
-# def make_to_classes_mapping(indices_for_category, aggregation_function=torch.mean):
-#     return ToClassesMapping(indices_for_category, aggregation_function)
+def make_to_classes_mapping(indices_for_category, aggregation_function=torch.mean):
+    return ToClassesMapping(indices_for_category, aggregation_function)
 
 
 class ModelBuilderBase:

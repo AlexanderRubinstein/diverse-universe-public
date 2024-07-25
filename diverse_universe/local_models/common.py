@@ -13,7 +13,9 @@ import copy
 from stuned.utility.utils import (
     get_project_root_path,
     extract_list_from_huge_string,
-    get_with_assert
+    get_with_assert,
+    # raise_unknown,
+    # read_json
 )
 
 
@@ -31,10 +33,10 @@ from diverse_universe.local_models.ensemble import (
 #     make_logger
 # )
 # from utility.utils import (
-#     raise_unknown,
-#     get_with_assert,
+    # raise_unknown,
+    # get_with_assert,
 #     get_project_root_path,
-#     read_json
+    # read_json
 # )
 # from utility.utils import (
 #     extract_list_from_huge_string
@@ -47,13 +49,16 @@ from diverse_universe.local_models.ensemble import (
 #     make_diverse_vit,
 #     make_masking_wrapper
 # )
-# from local_models.utils import (
+from diverse_universe.local_models.utils import (
 #     TrainEvalSwitchModel,
 #     make_train_eval_switch_model,
 #     separate_classifier_and_featurizer,
-#     make_model_classes_wrapper,
-#     make_to_classes_mapping
-# )
+    make_model_classes_wrapper,
+    make_to_classes_mapping
+)
+from diverse_universe.local_models.wrappers import (
+    make_mvh_model_wrapper
+)
 # from local_models.baselines import (
 #     is_mlp,
 #     make_mlp
@@ -65,7 +70,7 @@ from diverse_universe.local_models.ensemble import (
 #     JSON_PATH
 # )
 # from local_models.model_vs_human import make_mvh_model_wrapper
-# sys.path.pop(0)
+sys.path.pop(0)
 
 
 # RESNET_DEFAULT_N_CHANNELS = 3
@@ -542,33 +547,33 @@ from diverse_universe.local_models.ensemble import (
 #     return ensemble
 
 
-def wrap_model(model, wrapper_type):
+# def wrap_model(model, wrapper_type):
 
-    if wrapper_type is None:
-        return model
+#     if wrapper_type is None:
+#         return model
 
-    if is_ensemble(model):
-        model = copy.deepcopy(model)
-        for i in range(len(model.submodels)):
-            model.submodels[i] = wrap_model(
-                model.submodels[i],
-                wrapper_type
-            )
-        if hasattr(model, "soup") and model.soup is not None:
-            model.soup = wrap_model(model.soup, wrapper_type)
-    else:
-        if wrapper_type == "mvh":
-            model = make_mvh_model_wrapper(model)
-        elif wrapper_type == "IN9":
-            model = make_in9_wrapper(model)
-        elif wrapper_type == "ina":
-            model = make_ina_wrapper(model)
-        elif wrapper_type == "inr":
-            model = make_inr_wrapper(model)
-        else:
-            raise_unknown("wrapper type", wrapper_type, "wrapper config")
+#     if is_ensemble(model):
+#         model = copy.deepcopy(model)
+#         for i in range(len(model.submodels)):
+#             model.submodels[i] = wrap_model(
+#                 model.submodels[i],
+#                 wrapper_type
+#             )
+#         if hasattr(model, "soup") and model.soup is not None:
+#             model.soup = wrap_model(model.soup, wrapper_type)
+#     else:
+#         if wrapper_type == "mvh":
+#             model = make_mvh_model_wrapper(model)
+#         elif wrapper_type == "IN9":
+#             model = make_in9_wrapper(model)
+#         elif wrapper_type == "ina":
+#             model = make_ina_wrapper(model)
+#         elif wrapper_type == "inr":
+#             model = make_inr_wrapper(model)
+#         else:
+#             raise_unknown("wrapper type", wrapper_type, "wrapper config")
 
-    return model
+#     return model
 
 
 # def invert_dict_with_repetitions(d):
@@ -587,7 +592,6 @@ def wrap_model(model, wrapper_type):
 #         self.in1000_to_in9 = {
 #             k: [int(vi) for vi in v] for k, v in self.in1000_to_in9.items()
 #         }
-
 
 #     def __call__(self, category_id):
 #         return self.in1000_to_in9[category_id]
