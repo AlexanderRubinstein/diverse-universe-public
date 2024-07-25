@@ -1,4 +1,4 @@
-# import os
+import os
 import sys
 import torch
 # import torchvision
@@ -8,25 +8,28 @@ import torch
 #     ResNet50_Weights,
 #     ResNet18_Weights
 # )
-# import timm
+import timm
 import copy
 from stuned.utility.utils import (
     get_project_root_path,
-    extract_list_from_huge_string,
     get_with_assert,
-    append_dict
-    # raise_unknown,
+    append_dict,
+    raise_unknown,
+    # extract_list_from_huge_string,
     # read_json
+)
+from stuned.utility.logger import (
+    make_logger
 )
 
 
 # local modules
 sys.path.insert(0, get_project_root_path())
 from diverse_universe.local_models.ensemble import (
-    # REDNECK_ENSEMBLE_KEY,
+    REDNECK_ENSEMBLE_KEY,
     # SINGLE_MODEL_KEY,
     # POE_KEY,
-    is_ensemble,
+    # is_ensemble,
     # make_redneck_ensemble,
     # split_linear_layer
 )
@@ -51,12 +54,13 @@ from diverse_universe.local_models.ensemble import (
 #     make_masking_wrapper
 # )
 from diverse_universe.local_models.utils import (
+    ModelBuilderBase,
+    get_model
 #     TrainEvalSwitchModel,
 #     make_train_eval_switch_model,
 #     separate_classifier_and_featurizer,
     # make_model_classes_wrapper,
     # make_to_classes_mapping,
-    get_model
 )
 from diverse_universe.local_models.wrappers import (
     make_mvh_model_wrapper
@@ -65,9 +69,9 @@ from diverse_universe.local_models.wrappers import (
 #     is_mlp,
 #     make_mlp
 # )
-# from local_models.beyond_in import (
-#     load_model_transform
-# )
+from diverse_universe.local_models.beyond_in import (
+    load_model_transform
+)
 # from local_datasets.utils import (
 #     JSON_PATH
 # )
@@ -75,7 +79,7 @@ from diverse_universe.local_models.wrappers import (
 sys.path.pop(0)
 
 
-# RESNET_DEFAULT_N_CHANNELS = 3
+RESNET_DEFAULT_N_CHANNELS = 3
 # RESNET_DEFAULT_N_CLASSES = 1000
 # IN9_MAPPING_PATH = os.path.join(
 #     get_project_root_path(),
@@ -98,279 +102,279 @@ sys.path.pop(0)
 HYPERPARAM_PREFIX = "__hyperparam__"
 
 
-# class ModelBuilder(ModelBuilderBase):
-#     def __init__(self, model_config, logger=None):
+class ModelBuilder(ModelBuilderBase):
+    def __init__(self, model_config, logger=None):
 
-#         if logger is None:
-#             logger = make_logger()
+        if logger is None:
+            logger = make_logger()
 
-#         self.model_type = model_config["type"]
-#         assert self.model_type in model_config
-#         self.model_specific_config = model_config[self.model_type]
+        self.model_type = model_config["type"]
+        assert self.model_type in model_config
+        self.model_specific_config = model_config[self.model_type]
 
-#         self.separation_config = model_config.get("separation_config", {})
+        self.separation_config = model_config.get("separation_config", {})
 
-#         self.logger = logger
+        self.logger = logger
 
-#         if "resnet" in self.model_type:
-#             self.pretrained = get_with_assert(
-#                 self.model_specific_config,
-#                 "pretrained"
-#             )
-#             self.n_channels = get_with_assert(
-#                 self.model_specific_config,
-#                 "n_channels"
-#             )
-#             self.n_classes = get_with_assert(
-#                 self.model_specific_config,
-#                 "n_classes"
-#             )
-#             if self.pretrained:
-#                 assert self.n_channels == RESNET_DEFAULT_N_CHANNELS
-#             if self.model_type == "resnet50":
-#                 self.build_func = self._build_resnet50
-#             elif self.model_type == "resnet18":
-#                 self.build_func = self._build_resnet18
-#             else:
-#                 raise_unknown(
-#                     "resnet model type",
-#                     self.model_type,
-#                     "model config"
-#                 )
+        if "resnet" in self.model_type:
+            self.pretrained = get_with_assert(
+                self.model_specific_config,
+                "pretrained"
+            )
+            self.n_channels = get_with_assert(
+                self.model_specific_config,
+                "n_channels"
+            )
+            self.n_classes = get_with_assert(
+                self.model_specific_config,
+                "n_classes"
+            )
+            if self.pretrained:
+                assert self.n_channels == RESNET_DEFAULT_N_CHANNELS
+            if self.model_type == "resnet50":
+                self.build_func = self._build_resnet50
+            elif self.model_type == "resnet18":
+                self.build_func = self._build_resnet18
+            else:
+                raise_unknown(
+                    "resnet model type",
+                    self.model_type,
+                    "model config"
+                )
 
-#         elif self.model_type == "linear":
-#             self.build_func = self._build_linear
+        elif self.model_type == "linear":
+            self.build_func = self._build_linear
 
-#         elif self.model_type == REDNECK_ENSEMBLE_KEY:
-#             self.build_func = self._build_redneck_ensemble
+        elif self.model_type == REDNECK_ENSEMBLE_KEY:
+            self.build_func = self._build_redneck_ensemble
 
-#         elif self.model_type == "diverse_vit":
-#             self.build_func = self._build_diverse_vit
+        elif self.model_type == "diverse_vit":
+            self.build_func = self._build_diverse_vit
 
-#         elif self.model_type == "diverse_vit_switch_ensemble":
-#             self.head_indices_list = get_with_assert(
-#                 self.model_specific_config,
-#                 "head_indices_list"
-#             )
-#             diverse_vit_config = get_with_assert(
-#                 self.model_specific_config,
-#                 "inner_vit"
-#             )
-#             self.diverse_vit_builder = ModelBuilder(
-#                 diverse_vit_config,
-#                 logger=self.logger
-#             )
-#             self.build_func = self._build_diverse_vit_switch_ensemble
+        elif self.model_type == "diverse_vit_switch_ensemble":
+            self.head_indices_list = get_with_assert(
+                self.model_specific_config,
+                "head_indices_list"
+            )
+            diverse_vit_config = get_with_assert(
+                self.model_specific_config,
+                "inner_vit"
+            )
+            self.diverse_vit_builder = ModelBuilder(
+                diverse_vit_config,
+                logger=self.logger
+            )
+            self.build_func = self._build_diverse_vit_switch_ensemble
 
-#         elif self.model_type == "mlp":
-#             self.build_func = self._build_mlp
+        elif self.model_type == "mlp":
+            self.build_func = self._build_mlp
 
-#         elif self.model_type == "timm_model":
-#             self.build_func = self._build_timm_model
+        elif self.model_type == "timm_model":
+            self.build_func = self._build_timm_model
 
-#         elif self.model_type == "torch_load":
-#             self.build_func = self._torch_load
+        elif self.model_type == "torch_load":
+            self.build_func = self._torch_load
 
-#         else:
-#             raise_unknown("model type", self.model_type, "model config")
+        else:
+            raise_unknown("model type", self.model_type, "model config")
 
-#     def _build_timm_model(self):
-#         timm_id = get_with_assert(self.model_specific_config, "timm_id")
-#         timm_kwargs = self.model_specific_config.get(
-#             "timm_kwargs",
-#             {}
-#         )
-#         return timm.create_model(timm_id, **timm_kwargs)
+    def _build_timm_model(self):
+        timm_id = get_with_assert(self.model_specific_config, "timm_id")
+        timm_kwargs = self.model_specific_config.get(
+            "timm_kwargs",
+            {}
+        )
+        return timm.create_model(timm_id, **timm_kwargs)
 
-#     def _torch_load(self):
-#         model_name = get_with_assert(self.model_specific_config, "model_name")
-#         # TODO(Alex | 22.01.2024) allow different model types
-#         checkpoint_path = get_with_assert(self.model_specific_config, "path")
-#         if model_name == "deit3_21k":
-#             # TODO(Alex | 16.02.2024): move to separate builder for deit3
-#             # as it does not make sense to have None checkpoint in torch_load
-#             if checkpoint_path is None:
-#                 pretrained_dir = None
-#             else:
-#                 pretrained_dir = os.path.dirname(checkpoint_path)
-#             model, _ = load_model_transform(
-#                 model_name,
-#                 pretrained_dir
-#             )
-#         else:
-#             assert model_name == "resnet18_1000"
-#             base_model = torchvision.models.resnet18(num_classes=1000)
-#             if checkpoint_path is None:
-#                 model = base_model
-#             else:
-#                 model = get_model(
-#                     checkpoint_path,
-#                     base_model=base_model
-#                 )
+    def _torch_load(self):
+        model_name = get_with_assert(self.model_specific_config, "model_name")
+        # TODO(Alex | 22.01.2024) allow different model types
+        checkpoint_path = get_with_assert(self.model_specific_config, "path")
+        if model_name == "deit3_21k":
+            # TODO(Alex | 16.02.2024): move to separate builder for deit3
+            # as it does not make sense to have None checkpoint in torch_load
+            if checkpoint_path is None:
+                pretrained_dir = None
+            else:
+                pretrained_dir = os.path.dirname(checkpoint_path)
+            model, _ = load_model_transform(
+                model_name,
+                pretrained_dir
+            )
+        else:
+            assert model_name == "resnet18_1000"
+            base_model = torchvision.models.resnet18(num_classes=1000)
+            if checkpoint_path is None:
+                model = base_model
+            else:
+                model = get_model(
+                    checkpoint_path,
+                    base_model=base_model
+                )
 
-#         return model
+        return model
 
-#     def _build_diverse_vit(self):
-#         return make_diverse_vit(self.model_specific_config)
+    def _build_diverse_vit(self):
+        return make_diverse_vit(self.model_specific_config)
 
-#     def _build_mlp(self):
-#         return make_mlp(**self.model_specific_config)
+    def _build_mlp(self):
+        return make_mlp(**self.model_specific_config)
 
-#     def _build_diverse_vit_switch_ensemble(self):
-#         assert hasattr(self, "diverse_vit_builder")
-#         assert hasattr(self, "head_indices_list")
+    def _build_diverse_vit_switch_ensemble(self):
+        assert hasattr(self, "diverse_vit_builder")
+        assert hasattr(self, "head_indices_list")
 
-#         diverse_vit = self.diverse_vit_builder.build()
+        diverse_vit = self.diverse_vit_builder.build()
 
-#         if self.head_indices_list:
-#             for head_indices in self.head_indices_list:
-#                 assert any(head_indices), \
-#                     f"At least one head should be used, " \
-#                     f"while given head indices are all False: {head_indices}"
-#         else:
-#             # Extract the number of heads from the diverse_vit instance
-#             num_heads = diverse_vit.vit.last_attn_num_heads
-#             self.head_indices_list = []
-#             # Use all heads
-#             self.head_indices_list.append([True] * num_heads)
-#             # Use one head at a time
-#             for head_idx  in range(num_heads):
-#                 head_indices = [False] * num_heads
-#                 head_indices[head_idx] = True
-#                 self.head_indices_list.append(head_indices)
+        if self.head_indices_list:
+            for head_indices in self.head_indices_list:
+                assert any(head_indices), \
+                    f"At least one head should be used, " \
+                    f"while given head indices are all False: {head_indices}"
+        else:
+            # Extract the number of heads from the diverse_vit instance
+            num_heads = diverse_vit.vit.last_attn_num_heads
+            self.head_indices_list = []
+            # Use all heads
+            self.head_indices_list.append([True] * num_heads)
+            # Use one head at a time
+            for head_idx  in range(num_heads):
+                head_indices = [False] * num_heads
+                head_indices[head_idx] = True
+                self.head_indices_list.append(head_indices)
 
-#         return make_diverse_vit_switch_ensemble(
-#             diverse_vit,
-#             self.head_indices_list
-#         )
+        return make_diverse_vit_switch_ensemble(
+            diverse_vit,
+            self.head_indices_list
+        )
 
-#     def _build_resnet18(self):
-#         return self._build_resnet_n(
-#             constructor=models.resnet18,
-#             default_weights=ResNet18_Weights.DEFAULT
-#         )
+    def _build_resnet18(self):
+        return self._build_resnet_n(
+            constructor=models.resnet18,
+            default_weights=ResNet18_Weights.DEFAULT
+        )
 
-#     def _build_resnet50(self):
-#         return self._build_resnet_n(
-#             constructor=models.resnet50,
-#             default_weights=ResNet50_Weights.DEFAULT
-#         )
+    def _build_resnet50(self):
+        return self._build_resnet_n(
+            constructor=models.resnet50,
+            default_weights=ResNet50_Weights.DEFAULT
+        )
 
-#     def _build_linear(self):
-#         in_features = get_with_assert(self.model_specific_config, "in_features")
-#         out_features = get_with_assert(self.model_specific_config, "out_features")
-#         return torch.nn.Linear(in_features, out_features)
+    def _build_linear(self):
+        in_features = get_with_assert(self.model_specific_config, "in_features")
+        out_features = get_with_assert(self.model_specific_config, "out_features")
+        return torch.nn.Linear(in_features, out_features)
 
-#     def _build_resnet_n(self, constructor, default_weights):
+    def _build_resnet_n(self, constructor, default_weights):
 
-#         def update_resnet_top_layer(model, n_classes):
-#             num_ftrs = model.fc.in_features
-#             model.fc = torch.nn.Linear(num_ftrs, n_classes)
-#             return model
+        def update_resnet_top_layer(model, n_classes):
+            num_ftrs = model.fc.in_features
+            model.fc = torch.nn.Linear(num_ftrs, n_classes)
+            return model
 
-#         def update_resnet_first_layer_channels(model, n_channels):
+        def update_resnet_first_layer_channels(model, n_channels):
 
-#             model.conv1 = torch.nn.Conv2d(
-#                 in_channels=n_channels,
-#                 out_channels=model.conv1.out_channels,
-#                 kernel_size=model.conv1.kernel_size,
-#                 stride=model.conv1.stride,
-#                 padding=model.conv1.padding,
-#                 bias=model.conv1.bias
-#             )
+            model.conv1 = torch.nn.Conv2d(
+                in_channels=n_channels,
+                out_channels=model.conv1.out_channels,
+                kernel_size=model.conv1.kernel_size,
+                stride=model.conv1.stride,
+                padding=model.conv1.padding,
+                bias=model.conv1.bias
+            )
 
-#             return model
+            return model
 
-#         assert self.pretrained is not None
-#         assert self.n_classes is not None
-#         assert self.n_channels is not None
+        assert self.pretrained is not None
+        assert self.n_classes is not None
+        assert self.n_channels is not None
 
-#         model = constructor(
-#             weights=default_weights if self.pretrained else None
-#         )
+        model = constructor(
+            weights=default_weights if self.pretrained else None
+        )
 
-#         if self.n_channels != RESNET_DEFAULT_N_CHANNELS:
-#             model = update_resnet_first_layer_channels(
-#                 model=model,
-#                 n_channels=self.n_channels
-#             )
+        if self.n_channels != RESNET_DEFAULT_N_CHANNELS:
+            model = update_resnet_first_layer_channels(
+                model=model,
+                n_channels=self.n_channels
+            )
 
-#         if self.n_classes != RESNET_DEFAULT_N_CLASSES:
-#             model = update_resnet_top_layer(
-#                 model=model,
-#                 n_classes=self.n_classes
-#             )
-#         return model
+        if self.n_classes != RESNET_DEFAULT_N_CLASSES:
+            model = update_resnet_top_layer(
+                model=model,
+                n_classes=self.n_classes
+            )
+        return model
 
-#     def _build_redneck_ensemble(self):
+    def _build_redneck_ensemble(self):
 
-#         feature_extractor = build_model(
-#             self.model_specific_config.get("feature_extractor")
-#         )
+        feature_extractor = build_model(
+            self.model_specific_config.get("feature_extractor")
+        )
 
-#         base_estimator_builder = ModelBuilder(
-#             get_with_assert(
-#                 self.model_specific_config,
-#                 "base_estimator"
-#             ),
-#             logger=self.logger
-#         )
-#         return make_redneck_ensemble(
-#             get_with_assert(
-#                 self.model_specific_config,
-#                 "n_models"
-#             ),
-#             base_estimator_builder,
-#             weights=self.model_specific_config.get("weights", None),
-#             single_model_per_epoch=self.model_specific_config.get(
-#                 SINGLE_MODEL_KEY,
-#                 False
-#             ),
-#             identical=self.model_specific_config.get("identical", False),
-#             feature_extractor=feature_extractor,
-#             product_of_experts=self.model_specific_config.get(
-#                 POE_KEY,
-#                 False
-#             ),
-#             random_select=self.model_specific_config.get(
-#                 "random_select"
-#             ),
-#             keep_inactive_on_cpu=self.model_specific_config.get(
-#                 "keep_inactive_on_cpu",
-#                 False
-#             ),
-#             split_last_linear_layer=self.model_specific_config.get(
-#                 "split_last_linear_layer",
-#                 False
-#             ),
-#             freeze_feature_extractor=self.model_specific_config.get(
-#                 "freeze_feature_extractor",
-#                 True
-#             )
-#         )
+        base_estimator_builder = ModelBuilder(
+            get_with_assert(
+                self.model_specific_config,
+                "base_estimator"
+            ),
+            logger=self.logger
+        )
+        return make_redneck_ensemble(
+            get_with_assert(
+                self.model_specific_config,
+                "n_models"
+            ),
+            base_estimator_builder,
+            weights=self.model_specific_config.get("weights", None),
+            single_model_per_epoch=self.model_specific_config.get(
+                SINGLE_MODEL_KEY,
+                False
+            ),
+            identical=self.model_specific_config.get("identical", False),
+            feature_extractor=feature_extractor,
+            product_of_experts=self.model_specific_config.get(
+                POE_KEY,
+                False
+            ),
+            random_select=self.model_specific_config.get(
+                "random_select"
+            ),
+            keep_inactive_on_cpu=self.model_specific_config.get(
+                "keep_inactive_on_cpu",
+                False
+            ),
+            split_last_linear_layer=self.model_specific_config.get(
+                "split_last_linear_layer",
+                False
+            ),
+            freeze_feature_extractor=self.model_specific_config.get(
+                "freeze_feature_extractor",
+                True
+            )
+        )
 
-#     def build(self):
-#         self.logger.log("Building {} model..".format(self.model_type))
-#         model = self.build_func()
-#         if len(self.separation_config) != 0:
-#             self.logger.log(
-#                 f"Separating model with config {self.separation_config}"
-#             )
-#             separate_what = self.separation_config.get(
-#                 "separate",
-#                 "classifier"
-#             )
+    def build(self):
+        self.logger.log("Building {} model..".format(self.model_type))
+        model = self.build_func()
+        if len(self.separation_config) != 0:
+            self.logger.log(
+                f"Separating model with config {self.separation_config}"
+            )
+            separate_what = self.separation_config.get(
+                "separate",
+                "classifier"
+            )
 
-#             feature_extractor, classifier = separate_classifier_and_featurizer(
-#                 model,
-#                 block_id=self.separation_config.get("block_id")
-#             )
-#             if separate_what == "classifier":
-#                 model = classifier
-#             else:
-#                 assert separate_what == "feature_extractor"
-#                 model = feature_extractor
-#         return model
+            feature_extractor, classifier = separate_classifier_and_featurizer(
+                model,
+                block_id=self.separation_config.get("block_id")
+            )
+            if separate_what == "classifier":
+                model = classifier
+            else:
+                assert separate_what == "feature_extractor"
+                model = feature_extractor
+        return model
 
 
 # def make_diverse_vit_switch_ensemble(
@@ -448,21 +452,21 @@ HYPERPARAM_PREFIX = "__hyperparam__"
 #     return TransformsWrapper(model, transforms)
 
 
-# def make_model_builder(model_config, logger):
-#     return ModelBuilder(model_config=model_config, logger=logger)
+def make_model_builder(model_config, logger):
+    return ModelBuilder(model_config=model_config, logger=logger)
 
 
-# def build_model(model_config, logger=None):
+def build_model(model_config, logger=None):
 
-#     if model_config is None:
-#         return None
+    if model_config is None:
+        return None
 
-#     model_builder = make_model_builder(model_config, logger)
-#     model = model_builder.build()
+    model_builder = make_model_builder(model_config, logger)
+    model = model_builder.build()
 
-#     model = wrap_model(model, model_config.get("wrapper"))
+    model = wrap_model(model, model_config.get("wrapper"))
 
-#     return model
+    return model
 
 
 # def get_num_classes(model):
