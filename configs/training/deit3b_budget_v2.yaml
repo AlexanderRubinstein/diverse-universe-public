@@ -60,15 +60,15 @@ params:
         gamma: <Placeholder>
         lambda: null
         loss_type: a2d
-        manual_lambda: <placeholder>
+        manual_lambda: 0 # tmp
         modifier: budget
         task_loss:
           type: xce
         use_always_labeled: true
       smoothing_eps: 0.5
       type: divdis
-    freeze_model_on_first_epoch: true
-    n_epochs: 11
+    freeze_model_on_first_epoch: false
+    n_epochs: 1 # tmp
     optimizer:
       adam:
         weight_decay: 0.9
@@ -88,7 +88,7 @@ params:
     reset_epochs: true
   use_gpu: true
 patch:
-  diversity_lambda: <placeholder>
+  diversity_lambda: 0.5 # tmp
 statistics:
   batchwise: false
   keep_modelwise: false

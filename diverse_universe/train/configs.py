@@ -174,7 +174,7 @@ def patch_exp_config(experiment_config):
         gdrive_folder = None
         if LOGGING_CONFIG_KEY in experiment_config:
             logging_config = experiment_config[LOGGING_CONFIG_KEY]
-            assert_key(GDRIVE_FOLDER_KEY, logging_config)
+            # assert_key(GDRIVE_FOLDER_KEY, logging_config)
             assert_key(OUTPUT_CSV_KEY, logging_config)
             if logging_config[OUTPUT_CSV_KEY] is not None:
                 check_csv_line_config(
@@ -182,7 +182,8 @@ def patch_exp_config(experiment_config):
                 )
             output_config \
                 = logging_config[OUTPUT_CSV_KEY]
-            gdrive_folder = logging_config[GDRIVE_FOLDER_KEY]
+            # gdrive_folder = logging_config[GDRIVE_FOLDER_KEY]
+            gdrive_folder = logging_config.get(GDRIVE_FOLDER_KEY)
 
         logging_config = copy.deepcopy(experiment_config["statistics"])
         logging_config.pop("batchwise")

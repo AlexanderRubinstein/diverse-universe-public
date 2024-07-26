@@ -2,6 +2,8 @@
 models
 envs
 experiments
+tmp
+*.lock
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
