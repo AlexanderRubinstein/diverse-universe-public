@@ -1,4 +1,5 @@
 cache_path: ./cache
+checkpoint_symlink: "./models/symlinked/deit3b_budget_v2_lambda_0.5_manual_lambda_0.00E+00"
 data:
   dataset:
     from_h5:

@@ -603,6 +603,17 @@ def train_eval_loop(
             experiment_config[RUN_PATH_CONFIG_KEY],
             logger=logger
         )
+        checkpoint_symlink = experiment_config.get("checkpoint_symlink")
+        if (
+                checkpoint_symlink is not None
+            and
+                not os.path.exists(checkpoint_symlink)
+        ):
+            os.makedirs(
+                os.path.dirname(checkpoint_symlink),
+                exist_ok=True
+            )
+            os.symlink(final_checkpoint_path, checkpoint_symlink)
         try_to_log_in_csv(
             logger,
             "final checkpoint path",
