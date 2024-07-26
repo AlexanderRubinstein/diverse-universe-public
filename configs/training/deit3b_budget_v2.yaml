@@ -57,11 +57,11 @@ params:
     criterion:
       divdis:
         disagree_after_epoch: 0
-        disagree_below_threshold: null
-        gamma: <Placeholder>
+        # disagree_below_threshold: null
+        # gamma: <placeholder>
         lambda: null
         loss_type: a2d
-        manual_lambda: 0 # tmp
+        manual_lambda: <placeholder>
         modifier: budget
         task_loss:
           type: xce
@@ -69,7 +69,7 @@ params:
       smoothing_eps: 0.5
       type: divdis
     freeze_model_on_first_epoch: false
-    n_epochs: 1 # tmp
+    n_epochs: 10
     optimizer:
       adam:
         weight_decay: 0.9
@@ -89,7 +89,7 @@ params:
     reset_epochs: true
   use_gpu: true
 patch:
-  diversity_lambda: 0.5 # tmp
+  diversity_lambda: <placeholder>
 statistics:
   batchwise: false
   keep_modelwise: false
