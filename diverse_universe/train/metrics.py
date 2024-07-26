@@ -39,7 +39,7 @@ class MetricsWrapper:
         self,
         compute_metrics,
         metrics_base_name,
-        final_aggregation=None,
+        # final_aggregation=None,
         aggregatable_stages=None,
         report_best_metric=False
     ):
@@ -108,7 +108,7 @@ def make_metric(config, device="cpu"):
     compute_metrics = MetricsWrapper(
         compute_metrics.to(device),
         metric_type.replace(NAME_SEP, ALT_SEP),
-        final_aggregation=metric_config.get("final_aggregation"),
+        # final_aggregation=metric_config.get("final_aggregation"),
         aggregatable_stages=metric_config.get("aggregatable_stages"),
         report_best_metric=metric_config.get("report_best_metric", False)
     )

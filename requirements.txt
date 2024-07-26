@@ -143,3 +143,4 @@ Werkzeug==2.3.6
 wilds==2.0.0
 xxhash==3.3.0
 yarl==1.9.2
+pytorch_warmup==0.1.1

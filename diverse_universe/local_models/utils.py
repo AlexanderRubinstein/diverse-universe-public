@@ -7,6 +7,9 @@ import torch
 import copy
 from stuned.utility.utils import (
     get_with_assert,
+    aggregate_tensors_by_func,
+    func_for_dim,
+    # extract_list_from_huge_string
     # append_dict
 )
 
@@ -455,3 +458,46 @@ def make_model_builder_from_list(list_of_models):
 #         current_tuple = []
 
 #     return res, name_to_prop
+
+
+def stores_input(outputs):
+    assert len(outputs) > 0
+    output_0 = outputs[0]
+    return isinstance(output_0, (list, tuple)) and len(output_0) == 2
+
+
+def compute_ensemble_output(
+    outputs,
+    weights=None,
+    process_logits=None
+):
+
+    if process_logits is None:
+        process_logits = lambda x: x
+
+    if weights is None:
+        weights = [1.0] * len(outputs)
+
+    if stores_input(outputs):
+        extractor = lambda x: x[1]
+    else:
+        extractor = lambda x: x
+
+    return aggregate_tensors_by_func(
+        [
+            weight * process_logits(extractor(submodel_output).unsqueeze(0))
+                for weight, submodel_output
+                    in zip(weights, outputs)
+        ],
+        func=func_for_dim(torch.mean, dim=0)
+    ).squeeze(0)
+
+
+def bootstrap_ensemble_outputs(outputs, assert_len=True):
+    if_stores_input = stores_input(outputs)
+    if assert_len:
+        assert if_stores_input
+    if if_stores_input:
+        return [output[1] for output in outputs]
+    else:
+        return outputs

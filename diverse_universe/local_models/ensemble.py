@@ -23,7 +23,8 @@ from diverse_universe.local_models.utils import (
     ModelClassesWrapper,
     unrequire_grads,
     get_model,
-    make_model_builder_from_list
+    make_model_builder_from_list,
+    compute_ensemble_output
 )
 # from diverse_universe.local_datasets.utils import (
 #     get_probs
@@ -384,37 +385,37 @@ def is_ensemble(model):
     return isinstance(model, RedneckEnsemble)
 
 
-def stores_input(outputs):
-    assert len(outputs) > 0
-    output_0 = outputs[0]
-    return isinstance(output_0, (list, tuple)) and len(output_0) == 2
+# def stores_input(outputs):
+#     assert len(outputs) > 0
+#     output_0 = outputs[0]
+#     return isinstance(output_0, (list, tuple)) and len(output_0) == 2
 
 
-def compute_ensemble_output(
-    outputs,
-    weights=None,
-    process_logits=None
-):
+# def compute_ensemble_output(
+#     outputs,
+#     weights=None,
+#     process_logits=None
+# ):
 
-    if process_logits is None:
-        process_logits = lambda x: x
+#     if process_logits is None:
+#         process_logits = lambda x: x
 
-    if weights is None:
-        weights = [1.0] * len(outputs)
+#     if weights is None:
+#         weights = [1.0] * len(outputs)
 
-    if stores_input(outputs):
-        extractor = lambda x: x[1]
-    else:
-        extractor = lambda x: x
+#     if stores_input(outputs):
+#         extractor = lambda x: x[1]
+#     else:
+#         extractor = lambda x: x
 
-    return aggregate_tensors_by_func(
-        [
-            weight * process_logits(extractor(submodel_output).unsqueeze(0))
-                for weight, submodel_output
-                    in zip(weights, outputs)
-        ],
-        func=func_for_dim(torch.mean, dim=0)
-    ).squeeze(0)
+#     return aggregate_tensors_by_func(
+#         [
+#             weight * process_logits(extractor(submodel_output).unsqueeze(0))
+#                 for weight, submodel_output
+#                     in zip(weights, outputs)
+#         ],
+#         func=func_for_dim(torch.mean, dim=0)
+#     ).squeeze(0)
 
 
 def make_ensembles_from_paths(paths, group_by, num_ensembles, base_model=None):

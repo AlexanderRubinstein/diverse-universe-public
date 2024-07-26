@@ -1,4 +1,4 @@
-# import torch
+import torch
 # import sys
 # import os
 # import torch.optim as optim
@@ -18,6 +18,9 @@
 #     func_for_dim
 # )
 # sys.path.pop(0)
+
+
+BASE_ESTIMATOR_LOG_SUFFIX = "base_estimator"
 
 
 # def make_optimizer(
@@ -112,27 +115,27 @@
 #     return lr_scheduler
 
 
-# def take_from_2d_tensor(tensor, indices, dim=-1):
-#     # dim = dimension along which indices are applied
-#     # i.e. when dim = -1: res = tensor(tensor[0, indices[0]], ..., tensor[i, indices[i]])
+def take_from_2d_tensor(tensor, indices, dim=-1):
+    # dim = dimension along which indices are applied
+    # i.e. when dim = -1: res = tensor(tensor[0, indices[0]], ..., tensor[i, indices[i]])
 
-#     assert len(tensor.size()) == 2
+    assert len(tensor.size()) == 2
 
-#     dim_for_aranged = abs(dim) - 1
+    dim_for_aranged = abs(dim) - 1
 
-#     aranged = torch.arange(tensor.size(dim_for_aranged))
+    aranged = torch.arange(tensor.size(dim_for_aranged))
 
-#     if dim == -1:
-#         return tensor[
-#             aranged,
-#             indices
-#         ]
-#     else:
-#         assert dim == 0
-#         return tensor[
-#             indices,
-#             aranged
-#         ]
+    if dim == -1:
+        return tensor[
+            aranged,
+            indices
+        ]
+    else:
+        assert dim == 0
+        return tensor[
+            indices,
+            aranged
+        ]
 
 
 # def compute_ensemble_output(
@@ -176,3 +179,68 @@
 #         return [output[1] for output in outputs]
 #     else:
 #         return outputs
+
+
+# # TODO(Alex | 25.07.2024): re-balance if conditions
+# def record_diversity(
+#     res,
+#     outputs,
+#     stacked_outputs,
+#     metrics_mappings,
+#     labels=None,
+#     name_prefix="",
+#     detailed_results=None
+# ):
+
+#     # metrics_mappings is a tuple of tuples:
+#     # ((name_1, func_1), ... (name_k, func_k))
+#     for metric_tuple in metrics_mappings:
+
+#         metric_name = metric_tuple[0]
+#         metric_key = name_prefix + metric_name
+#         compute_metric = metric_tuple[1]
+#         if metric_name not in res:
+#             res[metric_key] = 0
+#         if metric_name in PER_SAMPLE_METRIC_NAMES:
+#             value = compute_metric(stacked_outputs)
+#         elif metric_name == "div_ortega":
+#             assert labels is not None
+#             value = compute_metric(stacked_outputs, labels).item()
+#         elif metric_name in [
+#             "var",
+#             "std",
+#             "dis",
+#             "max_var",
+#             "div_different_preds",
+#             "div_mean_logits",
+#             "div_max_logit",
+#             "div_entropy",
+#             "div_max_prob",
+#             "div_mean_prob",
+#             "div_different_preds_per_model",
+#             "div_continous_unique"
+#         ]:
+#             value = compute_metric(stacked_outputs).item()
+#         else:
+#             value = aggregate_tensors_by_func(
+#                 apply_pairwise(outputs, compute_metric)
+#             ).item()
+
+#         if not torch.is_tensor(value):
+#             res[metric_key] += value
+
+#         if detailed_results is not None:
+#             if metric_key in PER_SAMPLE_METRIC_NAMES:
+#                 if metric_key not in detailed_results:
+#                     detailed_results[metric_key] = []
+
+#                 if metric_key in detailed_results:
+#                     for subvalue in value:
+#                         detailed_results[metric_key].append(subvalue.item())
+
+
+def make_base_estimator_name(base_estimator_id):
+    return "{} {}".format(
+        BASE_ESTIMATOR_LOG_SUFFIX,
+        base_estimator_id
+    )

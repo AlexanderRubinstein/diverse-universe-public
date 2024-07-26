@@ -12,7 +12,7 @@ import sys
 import torch
 import wandb
 # import torch.optim as optim
-# import numpy as np
+import numpy as np
 import contextlib
 # from torch.profiler import (
 #     profile,
@@ -20,6 +20,7 @@ import contextlib
 # )
 # import copy
 from stuned.utility.utils import (
+    NAME_SEP,
     get_project_root_path,
     log_or_print,
     get_device,
@@ -31,13 +32,17 @@ from stuned.utility.utils import (
     remove_file_or_folder,
     append_dict,
     get_even_from_wrapped,
-    dicts_with_non_intersecting_keys
+    dicts_with_non_intersecting_keys,
+    remove_elements_from_the_end,
+    read_checkpoint
 )
 from stuned.utility.logger import (
+    INDENT,
     RedneckLogger,
     try_to_log_in_csv,
     try_to_log_in_wandb,
     make_logger,
+    # make_base_estimator_name
     # LOGGING_CONFIG_KEY,
     # GDRIVE_FOLDER_KEY,
 )
@@ -85,16 +90,20 @@ sys.path.insert(0, get_project_root_path())
 # from train_eval.models import (
 #     is_ensemble
 # )
+from diverse_universe.train.utils import (
+    BASE_ESTIMATOR_LOG_SUFFIX,
+    make_base_estimator_name
+)
 from diverse_universe.local_models.ensemble import (
     is_ensemble
 )
-from diverse_universe.local_models.wrappers import (
-    wrap_model
-)
+# from diverse_universe.local_models.wrappers import (
+#     wrap_model
+# )
 from diverse_universe.local_models.common import (
     build_model,
     # check_model,
-    # wrap_model
+    wrap_model
 )
 from diverse_universe.train.optimizer import (
     make_nan_checking_optimizer,
@@ -123,6 +132,8 @@ from diverse_universe.train.optimizer import (
 #     requires_input_gradient
 # )
 from diverse_universe.train.losses import (
+    LOSS_STATISTICS_NAME,
+    DivDisLossWrapper,
     make_criterion
 )
 from diverse_universe.train.metrics import make_metric
@@ -168,21 +179,21 @@ sys.path.pop(0)
 
 # # statistics
 TRAIN_LOGS_NAME = "train data with updating weights"
-# PREDICTION_STAT_KEY = "prediction"
+PREDICTION_STAT_KEY = "prediction"
 # GROUND_TRUTH_PROBS_STAT_KEY = "ground truth probs"
 # DIVERSITY_MEASURE_STAT_KEY = "diversity measure"
-# MEAN_STAT_NAME = "mean"
-# MAX_STAT_NAME = "max"
-# MIN_STAT_NAME = "min"
-# STD_STAT_NAME = "std"
-# AGGREGATED_STAT_NAMES = (
-#     MEAN_STAT_NAME,
-#     MAX_STAT_NAME,
-#     MIN_STAT_NAME,
-#     STD_STAT_NAME
-# )
-# NESTED_LOGS_SEPARATOR = "->"
-# AFTER_MEAN_SEP = " +- "
+MEAN_STAT_NAME = "mean"
+MAX_STAT_NAME = "max"
+MIN_STAT_NAME = "min"
+STD_STAT_NAME = "std"
+AGGREGATED_STAT_NAMES = (
+    MEAN_STAT_NAME,
+    MAX_STAT_NAME,
+    MIN_STAT_NAME,
+    STD_STAT_NAME
+)
+NESTED_LOGS_SEPARATOR = "->"
+AFTER_MEAN_SEP = " +- "
 CONFIG_LOG_NAME = "Config"
 # ALGORITHM_KEY = "algorithm"
 NUM_CLASSES_KEYS = ("num_classes", "num_classes_per_feature")
@@ -202,14 +213,15 @@ WANDB_ONLY_STATS = [
 ]
 LATEST_CHECKPOINT = "latest_checkpoint.pkl"
 MODEL_KEY = "model"
-# EXP_NAME_KEY = "experiment_name"
-# CHECKPOINT_TEMPLATE = (
-#     (EXP_NAME_KEY, None),
-#     ("current_epoch", 0)
-# )
+EXP_NAME_KEY = "experiment_name"
+CHECKPOINT_TEMPLATE = (
+    (EXP_NAME_KEY, None),
+    ("current_epoch", 0)
+)
 # SHORT_BASE_ESTIMATOR_LOG_SUFFIX = BASE_ESTIMATOR_LOG_SUFFIX.replace(NAME_SEP, '')
-# SCIENTIFIC_NOTATION_THRESHOLD = 1e-4
+SCIENTIFIC_NOTATION_THRESHOLD = 1e-4
 LOG_N_TIMES = 10
+# BASE_ESTIMATOR_LOG_SUFFIX = "base_estimator"
 
 
 def train_eval_loop(
@@ -380,11 +392,11 @@ def train_eval_loop(
 
     compute_metrics = make_metric(params_config, device)
 
-    if compute_metrics.final_aggregation is not None:
-        if compute_metrics.aggregatable_stages is None:
-            stages_to_aggregate = "all stages"
-        else:
-            stages_to_aggregate = str(compute_metrics.aggregatable_stages)
+    # if compute_metrics.final_aggregation is not None:
+    #     if compute_metrics.aggregatable_stages is None:
+    #         stages_to_aggregate = "all stages"
+    #     else:
+    #         stages_to_aggregate = str(compute_metrics.aggregatable_stages)
 
     checkpoint["compute_metrics"] = compute_metrics
 
@@ -520,62 +532,62 @@ def train_eval_loop(
         # else:
         to_log_in_csv = True
 
-        if compute_metrics.final_aggregation is not None:
+        # if compute_metrics.final_aggregation is not None:
 
-            if compute_metrics.aggregatable_stages is not None:
-                aggregatable_stats = {}
-                for stage_name in compute_metrics.aggregatable_stages:
-                    stage_stats = get_with_assert(all_stats, stage_name)
-                    aggregatable_stats[stage_name] = stage_stats
-            else:
-                aggregatable_stats = all_stats
+        #     if compute_metrics.aggregatable_stages is not None:
+        #         aggregatable_stats = {}
+        #         for stage_name in compute_metrics.aggregatable_stages:
+        #             stage_stats = get_with_assert(all_stats, stage_name)
+        #             aggregatable_stats[stage_name] = stage_stats
+        #     else:
+        #         aggregatable_stats = all_stats
 
-            aggregated_metric = compute_metrics.aggregate(aggregatable_stats)
+        #     aggregated_metric = compute_metrics.aggregate(aggregatable_stats)
 
-            all_stats["overall"] = {}
-            overall_stats = all_stats["overall"]
+        #     all_stats["overall"] = {}
+        #     overall_stats = all_stats["overall"]
 
-            log_or_print(
-                f"Aggregated metric for {stages_to_aggregate}"
-                f" in epoch {epoch + 1}:\n\n",
-                logger
-            )
+        #     log_or_print(
+        #         f"Aggregated metric for {stages_to_aggregate}"
+        #         f" in epoch {epoch + 1}:\n\n",
+        #         logger
+        #     )
 
-            for aggregated_metric_name, aggregated_metric_value \
-                in aggregated_metric.items():
+        #     for aggregated_metric_name, aggregated_metric_value \
+        #         in aggregated_metric.items():
 
-                log_or_print(
-                    f"{aggregated_metric_name}: {aggregated_metric_value}\n",
-                    logger
-                )
+        #         log_or_print(
+        #             f"{aggregated_metric_name}: {aggregated_metric_value}\n",
+        #             logger
+        #         )
 
-                overall_stats[aggregated_metric_name] \
-                    = str(aggregated_metric_value)
+        #         overall_stats[aggregated_metric_name] \
+        #             = str(aggregated_metric_value)
 
-            try_to_log_in_wandb(
-                logger,
-                aggregated_metric,
-                step=epoch
-            )
+        #     try_to_log_in_wandb(
+        #         logger,
+        #         aggregated_metric,
+        #         step=epoch
+        #     )
 
-            logger.log_separator()
+        #     logger.log_separator()
 
-            if compute_metrics.report_best_metric:
+        #     if compute_metrics.report_best_metric:
 
-                main_aggregated_metric_name = get_with_assert(
-                    aggregated_metric,
-                    compute_metrics.final_aggregation
-                )
+        #         main_aggregated_metric_name = get_with_assert(
+        #             aggregated_metric,
+        #             compute_metrics.final_aggregation
+        #         )
 
-                to_log_in_csv = False
+        #         to_log_in_csv = False
 
-                if (
-                        best_aggregated_metric is None
-                    or
-                        best_aggregated_metric < main_aggregated_metric_name
-                ):
-                    to_log_in_csv = True
-                    best_aggregated_metric = main_aggregated_metric_name
+        #         if (
+        #                 best_aggregated_metric is None
+        #             or
+        #                 best_aggregated_metric < main_aggregated_metric_name
+        #         ):
+        #             to_log_in_csv = True
+        #             best_aggregated_metric = main_aggregated_metric_name
 
         log_stats_in_csv(
             all_stats,
@@ -635,12 +647,12 @@ def infer_num_clases(data_config):
     return None
 
 
-# # based on: https://github.com/zhangchbin/OnlineLabelSmoothing/blob/7eaf70c8da7c68ba2170cbd88e0d918e86fa3f14/cifar/scripts/loss_all_methods.py#L31
-# def smooth_labels(label_one_hot, smoothing_eps):
-#     num_classes = label_one_hot.size(-1)
-#     return (
-#         label_one_hot * (1. - smoothing_eps) + smoothing_eps / float(num_classes)
-#     )
+# based on: https://github.com/zhangchbin/OnlineLabelSmoothing/blob/7eaf70c8da7c68ba2170cbd88e0d918e86fa3f14/cifar/scripts/loss_all_methods.py#L31
+def smooth_labels(label_one_hot, smoothing_eps):
+    num_classes = label_one_hot.size(-1)
+    return (
+        label_one_hot * (1. - smoothing_eps) + smoothing_eps / float(num_classes)
+    )
 
 
 def run_epoch(
@@ -1466,8 +1478,8 @@ def process_batch_default(
                 for key, value in stats_dict.items()
         }
 
-    if requires_input_gradient(criterion):
-        inputs.requires_grad = True
+    # if requires_input_gradient(criterion):
+    #     inputs.requires_grad = True
 
     with (
         contextlib.nullcontext()
@@ -1504,8 +1516,9 @@ def process_batch_default(
 
     if is_train:
 
-        if not isinstance(criterion, DiverseGradientsLoss):
-            outputs = normalize_outputs(outputs)
+        # if not isinstance(criterion, DiverseGradientsLoss):
+        #     outputs = normalize_outputs(outputs)
+        # outputs = normalize_outputs(outputs)
 
         train_info = do_default_train(
             model,
@@ -1575,45 +1588,45 @@ def process_batch_default(
 #     return result
 
 
-# def make_metrics_dict(
-#     compute_metrics,
-#     targets,
-#     outputs,
-#     is_train
-# ):
+def make_metrics_dict(
+    compute_metrics,
+    targets,
+    outputs,
+    is_train
+):
 
-#     def get_metrics(targets, outputs, compute_metrics):
+    def get_metrics(targets, outputs, compute_metrics):
 
-#         if len(targets.shape) > 1 and targets.shape[1] == 1:
-#             targets = torch.squeeze(targets, dim=1)
+        if len(targets.shape) > 1 and targets.shape[1] == 1:
+            targets = torch.squeeze(targets, dim=1)
 
-#         return compute_metrics(outputs, targets)
+        return compute_metrics(outputs, targets)
 
-#     metrics = {}
+    metrics = {}
 
-#     if isinstance(targets, dict):
-#         assert not is_train
+    if isinstance(targets, dict):
+        assert not is_train
 
-#         for target_key, targets_value in targets.items():
-#             metrics[
-#                 make_name_from_prefix_and_key(
-#                     compute_metrics.metrics_base_name,
-#                     target_key
-#                 )
-#             ] = get_metrics(
-#                 targets_value,
-#                 outputs,
-#                 compute_metrics
-#             )
-#     else:
+        for target_key, targets_value in targets.items():
+            metrics[
+                make_name_from_prefix_and_key(
+                    compute_metrics.metrics_base_name,
+                    target_key
+                )
+            ] = get_metrics(
+                targets_value,
+                outputs,
+                compute_metrics
+            )
+    else:
 
-#         metrics[compute_metrics.metrics_base_name] = get_metrics(
-#             targets,
-#             outputs,
-#             compute_metrics
-#         )
+        metrics[compute_metrics.metrics_base_name] = get_metrics(
+            targets,
+            outputs,
+            compute_metrics
+        )
 
-#     return metrics
+    return metrics
 
 
 # def is_wandb_only_stat(nested_key_as_list):
@@ -1705,126 +1718,126 @@ def log_stats_in_wandb(
     merge_stats_back(stats_to_log_for_current_stage, losses_stats)
 
 
-# def do_default_train(
-#     model,
-#     freeze_model,
-#     criterion,
-#     optimizer,
-#     outputs,
-#     targets,
-#     logger=None,
-#     unlabeled_outputs=None,
-#     log_this_batch=False,
-#     unlabeled_targets=None
-# ):
-#     loss_for_backward, loss_info, gradients_info = compute_criterion(
-#         outputs,
-#         targets,
-#         criterion,
-#         unlabeled_outputs=unlabeled_outputs,
-#         unlabeled_targets=unlabeled_targets
-#     )
+def do_default_train(
+    model,
+    freeze_model,
+    criterion,
+    optimizer,
+    outputs,
+    targets,
+    logger=None,
+    unlabeled_outputs=None,
+    log_this_batch=False,
+    unlabeled_targets=None
+):
+    loss_for_backward, loss_info, gradients_info = compute_criterion(
+        outputs,
+        targets,
+        criterion,
+        unlabeled_outputs=unlabeled_outputs,
+        unlabeled_targets=unlabeled_targets
+    )
 
-#     train_info = {TRAIN_LOGS_NAME: loss_info | gradients_info}
+    train_info = {TRAIN_LOGS_NAME: loss_info | gradients_info}
 
-#     optimizer.zero_grad(set_to_none=True)
-#     loss_for_backward.backward()
-#     if not freeze_model:
-#         optimizer.step()
+    optimizer.zero_grad(set_to_none=True)
+    loss_for_backward.backward()
+    if not freeze_model:
+        optimizer.step()
 
-#     return train_info
-
-
-# def compute_criterion(
-#     outputs,
-#     targets,
-#     criterion,
-#     unlabeled_outputs=None,
-#     unlabeled_targets=None
-# ):
-
-#     if isinstance(criterion, tuple):
-#         assert len(criterion) == 2
-#         unlabeled_criterion = criterion[1]
-#         criterion = criterion[0]
-#         if hasattr(unlabeled_criterion, "smoothing_eps"):
-#             assert getattr(unlabeled_criterion, "smoothing_eps") is None, \
-#                 "only main criterion can have smoothing_eps"
-#     else:
-#         unlabeled_criterion = None
-
-#     if hasattr(criterion, "smoothing_eps"):
-#         smoothing_eps = criterion.smoothing_eps
-#     else:
-#         smoothing_eps = None
-
-#     onehot_targets = ensure_targets_shape(
-#         outputs,
-#         targets,
-#         smoothing_eps
-#     ).float()
-
-#     unlabeled_criterion_output = None
-
-#     if unlabeled_outputs is None:
-
-#         criterion_output = criterion(outputs, onehot_targets)
-
-#     else:
-#         if unlabeled_criterion is not None:
-#             unlabeled_onehot_targets = ensure_targets_shape(
-#                 unlabeled_outputs,
-#                 unlabeled_targets
-#             ).float()
-#             criterion_output = criterion(outputs, onehot_targets)
-
-#             # unlabeled criterion takes unlabeled_outputs
-#             # similarly to how criterion takes ordinary outputs
-#             unlabeled_criterion_output = unlabeled_criterion(
-#                 unlabeled_outputs,
-#                 unlabeled_onehot_targets
-#             )
-#         else:
-#             criterion_output = criterion(outputs, onehot_targets, unlabeled_outputs)
-
-#     loss_for_backward, loss_info, gradients_info = extract_loss(
-#         criterion_output
-#     )
-
-#     if unlabeled_criterion_output is not None:
-#         (
-#             loss_for_backward_from_unlabeled,
-#             loss_info_from_unlabeled,
-#             gradients_info_unlabeled
-#         ) \
-#             = extract_loss(
-#                 unlabeled_criterion_output
-#         )
-#         assert len(gradients_info_unlabeled) == 0
-#         assert len(gradients_info) == 0
-#         loss_info_from_unlabeled = {
-#             "unlabeled_" + k: v for k, v in loss_info_from_unlabeled.items()
-#         }
-#         loss_for_backward += loss_for_backward_from_unlabeled
-#         loss_info |= loss_info_from_unlabeled
-
-#     return loss_for_backward, loss_info, gradients_info
+    return train_info
 
 
-# def extract_loss(criterion_output):
-#     if isinstance(criterion_output, tuple):
-#         assert len(criterion_output) == 3
-#         loss_for_backward = criterion_output[0]
-#         loss_info = criterion_output[1]
-#         assert isinstance(loss_info, dict)
-#         gradients_info = criterion_output[2]
-#         if len(gradients_info) > 0:
-#             gradients_info = {INPUT_GRAD_NAME: gradients_info}
-#     else:
-#         loss_for_backward = criterion_output
-#         loss_info = {LOSS_STATISTICS_NAME: loss_for_backward.item()}
-#         gradients_info = {}
-#     return loss_for_backward, loss_info, gradients_info
+def compute_criterion(
+    outputs,
+    targets,
+    criterion,
+    unlabeled_outputs=None,
+    unlabeled_targets=None
+):
+
+    if isinstance(criterion, tuple):
+        assert len(criterion) == 2
+        unlabeled_criterion = criterion[1]
+        criterion = criterion[0]
+        if hasattr(unlabeled_criterion, "smoothing_eps"):
+            assert getattr(unlabeled_criterion, "smoothing_eps") is None, \
+                "only main criterion can have smoothing_eps"
+    else:
+        unlabeled_criterion = None
+
+    if hasattr(criterion, "smoothing_eps"):
+        smoothing_eps = criterion.smoothing_eps
+    else:
+        smoothing_eps = None
+
+    onehot_targets = ensure_targets_shape(
+        outputs,
+        targets,
+        smoothing_eps
+    ).float()
+
+    unlabeled_criterion_output = None
+
+    if unlabeled_outputs is None:
+
+        criterion_output = criterion(outputs, onehot_targets)
+
+    else:
+        if unlabeled_criterion is not None:
+            unlabeled_onehot_targets = ensure_targets_shape(
+                unlabeled_outputs,
+                unlabeled_targets
+            ).float()
+            criterion_output = criterion(outputs, onehot_targets)
+
+            # unlabeled criterion takes unlabeled_outputs
+            # similarly to how criterion takes ordinary outputs
+            unlabeled_criterion_output = unlabeled_criterion(
+                unlabeled_outputs,
+                unlabeled_onehot_targets
+            )
+        else:
+            criterion_output = criterion(outputs, onehot_targets, unlabeled_outputs)
+
+    loss_for_backward, loss_info, gradients_info = extract_loss(
+        criterion_output
+    )
+
+    if unlabeled_criterion_output is not None:
+        (
+            loss_for_backward_from_unlabeled,
+            loss_info_from_unlabeled,
+            gradients_info_unlabeled
+        ) \
+            = extract_loss(
+                unlabeled_criterion_output
+        )
+        assert len(gradients_info_unlabeled) == 0
+        assert len(gradients_info) == 0
+        loss_info_from_unlabeled = {
+            "unlabeled_" + k: v for k, v in loss_info_from_unlabeled.items()
+        }
+        loss_for_backward += loss_for_backward_from_unlabeled
+        loss_info |= loss_info_from_unlabeled
+
+    return loss_for_backward, loss_info, gradients_info
+
+
+def extract_loss(criterion_output):
+    if isinstance(criterion_output, tuple):
+        assert len(criterion_output) == 3
+        loss_for_backward = criterion_output[0]
+        loss_info = criterion_output[1]
+        assert isinstance(loss_info, dict)
+        gradients_info = criterion_output[2]
+        # if len(gradients_info) > 0:
+        #     gradients_info = {INPUT_GRAD_NAME: gradients_info}
+    else:
+        loss_for_backward = criterion_output
+        loss_info = {LOSS_STATISTICS_NAME: loss_for_backward.item()}
+        gradients_info = {}
+    return loss_for_backward, loss_info, gradients_info
 
 
 # def check_optimizer(optimizer, expected_optimizer):
@@ -1881,34 +1894,42 @@ def make_or_get_from_checkpoint(
     return result
 
 
-# def ensure_targets_shape(outputs, targets, smoothing_eps=None):
-#     outputs = normalize_outputs(outputs)
-#     if isinstance(outputs, list):
-#         assert outputs
-#         assert len(outputs[0]) == 2
-#         outputs = outputs[0][1]
-#     if outputs.shape == targets.shape:
-#         pass
-#     elif outputs.shape[:-1] == targets.shape:
-#         last_dim = outputs.shape[-1]
-#         if last_dim == 1:
-#             targets = targets.unsqueeze(-1)
-#         else:
-#             num_classes = last_dim
-#             targets = torch.nn.functional.one_hot(targets, num_classes)
-#     else:
-#         raise Exception(
-#             "Could not make same shape for outputs"
-#             " with shape {} and targets with shape {}".format(
-#                 outputs.shape,
-#                 targets.shape
-#             )
-#         )
+def ensure_targets_shape(outputs, targets, smoothing_eps=None):
+    # outputs = normalize_outputs(outputs)
+    if isinstance(outputs, list):
+        assert outputs
+        assert len(outputs[0]) == 2
+        outputs = outputs[0][1]
+    if outputs.shape == targets.shape:
+        pass
+    elif outputs.shape[:-1] == targets.shape:
+        last_dim = outputs.shape[-1]
+        if last_dim == 1:
+            targets = targets.unsqueeze(-1)
+        else:
+            num_classes = last_dim
+            targets = torch.nn.functional.one_hot(targets, num_classes)
+    else:
+        raise Exception(
+            "Could not make same shape for outputs"
+            " with shape {} and targets with shape {}".format(
+                outputs.shape,
+                targets.shape
+            )
+        )
 
-#     if smoothing_eps is not None:
-#         targets = smooth_labels(targets, smoothing_eps)
+    # TODO(Alex | 26.07.2024): add smoothing directly to criterion
+    if smoothing_eps is not None:
+        targets = smooth_labels(targets, smoothing_eps)
 
-#     return targets
+    return targets
+
+
+# def make_base_estimator_name(base_estimator_id):
+#     return "{} {}".format(
+#         BASE_ESTIMATOR_LOG_SUFFIX,
+#         base_estimator_id
+#     )
 
 
 # TODO(Alex | 25.07.2024): simplify or even remove this function
@@ -2080,30 +2101,30 @@ def make_batch_stats(
                 for i, outputs_per_model in enumerate(outputs)
         }
 
-    def prepare_input_grad_for_image(
-        input_grad,
-        inputs_shape,
-        idx
-    ):
-        input_grad_reshaped = torch.abs(
-            input_grad.detach().view(inputs_shape)[idx].squeeze()
-        )
-        input_grad_reshaped = (
-            input_grad_reshaped / input_grad_reshaped.max()
-        )
-        return input_grad_reshaped
+    # def prepare_input_grad_for_image(
+    #     input_grad,
+    #     inputs_shape,
+    #     idx
+    # ):
+    #     input_grad_reshaped = torch.abs(
+    #         input_grad.detach().view(inputs_shape)[idx].squeeze()
+    #     )
+    #     input_grad_reshaped = (
+    #         input_grad_reshaped / input_grad_reshaped.max()
+    #     )
+    #     return input_grad_reshaped
 
-    outputs = normalize_outputs(outputs)
+    # outputs = normalize_outputs(outputs)
 
     batch_media = {stage_name: {}}
     batch_media_for_current_stage = batch_media[stage_name]
     if train_info is not None:
 
         train_info_for_current_stage = train_info[stage_name]
-        if INPUT_GRAD_NAME in train_info_for_current_stage:
+        # if INPUT_GRAD_NAME in train_info_for_current_stage:
 
-            batch_media_for_current_stage[INPUT_GRAD_NAME] \
-                = train_info_for_current_stage.pop(INPUT_GRAD_NAME)
+        #     batch_media_for_current_stage[INPUT_GRAD_NAME] \
+        #         = train_info_for_current_stage.pop(INPUT_GRAD_NAME)
         losses_names = [
             stat_name for stat_name
                 in train_info_for_current_stage.keys()
@@ -2128,14 +2149,14 @@ def make_batch_stats(
 
     statistics_config = experiment_config["statistics"]
 
-    # multi label dataloader for ensemble
-    if isinstance(outputs, list) and isinstance(targets, dict):
-        softmax = torch.nn.Softmax(dim=-1)
-        batch_stats_for_current_stage[GROUND_TRUTH_PROBS_STAT_KEY] = {}
-        for target_name, target in targets.items():
-            batch_stats_for_current_stage[GROUND_TRUTH_PROBS_STAT_KEY][
-                target_name
-            ] = make_ground_truth_probs_dict(outputs, target, softmax)
+    # # multi label dataloader for ensemble
+    # if isinstance(outputs, list) and isinstance(targets, dict):
+    #     softmax = torch.nn.Softmax(dim=-1)
+    #     batch_stats_for_current_stage[GROUND_TRUTH_PROBS_STAT_KEY] = {}
+    #     for target_name, target in targets.items():
+    #         batch_stats_for_current_stage[GROUND_TRUTH_PROBS_STAT_KEY][
+    #             target_name
+    #         ] = make_ground_truth_probs_dict(outputs, target, softmax)
 
     if statistics_config["use_wandb"]:
 
@@ -2257,10 +2278,10 @@ def make_batch_stats(
             #             caption=gradient_caption
             #         )
 
-        else:
+        # else:
 
-            if INPUT_GRAD_NAME in batch_media_for_current_stage:
-                batch_media_for_current_stage.pop(INPUT_GRAD_NAME)
+        #     if INPUT_GRAD_NAME in batch_media_for_current_stage:
+        #         batch_media_for_current_stage.pop(INPUT_GRAD_NAME)
 
     return (
         batch_stats,
@@ -2270,48 +2291,48 @@ def make_batch_stats(
     )
 
 
-# def add_aggregated_stats(stats, values_array):
-#     stats[MEAN_STAT_NAME] = np.mean(values_array)
-#     stats[MAX_STAT_NAME] = np.max(values_array)
-#     stats[MIN_STAT_NAME] = np.min(values_array)
-#     stats[STD_STAT_NAME] = np.std(values_array)
+def add_aggregated_stats(stats, values_array):
+    stats[MEAN_STAT_NAME] = np.mean(values_array)
+    stats[MAX_STAT_NAME] = np.max(values_array)
+    stats[MIN_STAT_NAME] = np.min(values_array)
+    stats[STD_STAT_NAME] = np.std(values_array)
 
 
-# def make_caption(
-#     input_idx,
-#     batch_idx,
-#     epoch,
-#     estimator_name=None,
-#     and_grad=False,
-#     target_stats=None
-# ):
-#     result = "Input number {} in batch {} for epoch {}".format(
-#         input_idx,
-#         batch_idx,
-#         epoch
-#     )
-#     if and_grad:
-#         assert target_stats is None
-#         result += " and it's gradient"
-#     if estimator_name is not None:
-#         result += " for {}".format(estimator_name)
-#     if target_stats is not None:
-#         assert not and_grad
-#         if PREDICTION_STAT_KEY in target_stats:
-#             result += "\n{}: {}".format(
-#                 PREDICTION_STAT_KEY,
-#                 target_stats[PREDICTION_STAT_KEY]
-#             )
-#         for target_name, target_value in sorted(target_stats.items()):
-#             if target_name == PREDICTION_STAT_KEY:
-#                 continue
-#             result += "\n{}: {}".format(target_name, target_value)
+def make_caption(
+    input_idx,
+    batch_idx,
+    epoch,
+    estimator_name=None,
+    and_grad=False,
+    target_stats=None
+):
+    result = "Input number {} in batch {} for epoch {}".format(
+        input_idx,
+        batch_idx,
+        epoch
+    )
+    if and_grad:
+        assert target_stats is None
+        result += " and it's gradient"
+    if estimator_name is not None:
+        result += " for {}".format(estimator_name)
+    if target_stats is not None:
+        assert not and_grad
+        if PREDICTION_STAT_KEY in target_stats:
+            result += "\n{}: {}".format(
+                PREDICTION_STAT_KEY,
+                target_stats[PREDICTION_STAT_KEY]
+            )
+        for target_name, target_value in sorted(target_stats.items()):
+            if target_name == PREDICTION_STAT_KEY:
+                continue
+            result += "\n{}: {}".format(target_name, target_value)
 
-#     return result
+    return result
 
 
-# def make_name_from_prefix_and_key(prefix, key):
-#     return prefix + NAME_SEP + str(key)
+def make_name_from_prefix_and_key(prefix, key):
+    return prefix + NAME_SEP + str(key)
 
 
 def aggregate_stats(stats, only_mean=False):
@@ -2506,12 +2527,12 @@ def log_stats(
     return flattened_stats
 
 
-# def value_as_str_scientific(value):
-#     if value > SCIENTIFIC_NOTATION_THRESHOLD:
-#         value_as_str = "{:0.4f}".format(value)
-#     else:
-#         value_as_str = "{:2E}".format(value)
-#     return value_as_str
+def value_as_str_scientific(value):
+    if value > SCIENTIFIC_NOTATION_THRESHOLD:
+        value_as_str = "{:0.4f}".format(value)
+    else:
+        value_as_str = "{:2E}".format(value)
+    return value_as_str
 
 
 def log_stats_in_csv(
@@ -2698,10 +2719,10 @@ def make_scheduler_step(lr_scheduler, epoch_stats_for_current_stage):
             lr_scheduler.step()
 
 
-# def init_empty_checkpoint(experiment_name):
-#     checkpoint = {key: value for key, value in CHECKPOINT_TEMPLATE}
-#     checkpoint[EXP_NAME_KEY] = experiment_name
-#     return checkpoint
+def init_empty_checkpoint(experiment_name):
+    checkpoint = {key: value for key, value in CHECKPOINT_TEMPLATE}
+    checkpoint[EXP_NAME_KEY] = experiment_name
+    return checkpoint
 
 
 def init_checkpoint(

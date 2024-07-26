@@ -704,16 +704,16 @@ def extract_subset_indices(subset_indices, split):
 #     return res
 
 
-def apply_pairwise(iterable, func):
+# def apply_pairwise(iterable, func):
 
-    if len(iterable) == 1:
-        return iterable
+#     if len(iterable) == 1:
+#         return iterable
 
-    pairs = itertools.combinations(iterable, 2)
-    res = []
-    for a, b in pairs:
-        res.append(func(a, b))
-    return res
+#     pairs = itertools.combinations(iterable, 2)
+#     res = []
+#     for a, b in pairs:
+#         res.append(func(a, b))
+#     return res
 
 
 # def get_validation_dataloaders(

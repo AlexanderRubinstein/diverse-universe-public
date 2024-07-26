@@ -34,11 +34,15 @@ from diverse_universe.local_models.ensemble import (
     SINGLE_MODEL_KEY,
     POE_KEY,
     make_redneck_ensemble,
-    # is_ensemble,
+    is_ensemble,
     # split_linear_layer
 )
 from diverse_universe.local_models.wrappers import (
-    wrap_model
+    # wrap_model,
+    make_mvh_wrapper,
+    make_in9_wrapper,
+    make_ina_wrapper,
+    make_inr_wrapper
 )
 # from utility.logger import (
 #     make_logger
@@ -987,3 +991,32 @@ def separate_classifier_and_featurizer(
             "separate_classifier_and_featurizer"
         )
     return featurizer, classifier
+
+
+def wrap_model(model, wrapper_type):
+
+    if wrapper_type is None:
+        return model
+
+    if is_ensemble(model):
+        model = copy.deepcopy(model)
+        for i in range(len(model.submodels)):
+            model.submodels[i] = wrap_model(
+                model.submodels[i],
+                wrapper_type
+            )
+        if hasattr(model, "soup") and model.soup is not None:
+            model.soup = wrap_model(model.soup, wrapper_type)
+    else:
+        if wrapper_type == "mvh":
+            model = make_mvh_wrapper(model)
+        elif wrapper_type == "IN9":
+            model = make_in9_wrapper(model)
+        elif wrapper_type == "ina":
+            model = make_ina_wrapper(model)
+        elif wrapper_type == "inr":
+            model = make_inr_wrapper(model)
+        else:
+            raise_unknown("wrapper type", wrapper_type, "wrapper config")
+
+    return model

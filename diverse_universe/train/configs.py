@@ -1,10 +1,29 @@
 # import os
-# import sys
-# import copy
+import sys
+import copy
+from stuned.utility.logger import (
+    LOGGING_CONFIG_KEY,
+    GDRIVE_FOLDER_KEY,
+    # make_logger
+)
+from stuned.utility.utils import (
+    check_dict,
+    get_with_assert,
+    update_dict_by_nested_key,
+    get_project_root_path
+)
+from stuned.local_datasets.imagenet1k import (
+    IMAGENET_KEY
+)
+from stuned.utility.configs import (
+    find_nested_keys_by_keyword_in_config,
+    normalize_paths
+)
 
 
-# # local modules
+# local modules
 # sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+sys.path.insert(0, get_project_root_path())
 # from utility.utils import (
 #     raise_unknown,
 #     check_dict,
@@ -45,26 +64,30 @@
 #     DIV_DIS_ALGO_NAME,
 #     CLASSIFICATION_LOSS_WEIGHT_KEY
 # )
-# from local_datasets.common import (
-#     UNLABELED_DATASET_KEY
-# )
+from diverse_universe.local_datasets.common import (
+    UNLABELED_DATASET_KEY
+)
 # from local_datasets.tiny_imagenet import (
 #     TINY_IMAGENET,
 #     TINY_IMAGENET_TEST
 # )
-# from local_datasets.from_h5 import (
-#     FROM_H5
-# )
+from diverse_universe.local_datasets.from_h5 import (
+    FROM_H5
+)
+from diverse_universe.train.losses import (
+    DIVDIS_LOSS_KEY,
+    LAMBDA_KEY
+)
 # from local_algorithms.div_dis import (
 #     DIVDIS_DIVERSITY_WEIGHT_KEY
 # )
 # from local_datasets.imagenet1k import (
 #     IMAGENET_KEY
 # )
-# sys.path.pop(0)
+sys.path.pop(0)
 
 
-# OUTPUT_CSV_KEY = "output_csv"
+OUTPUT_CSV_KEY = "output_csv"
 # DEFAULT_WANDB_CONFIG = \
 #     {
 #         "netrc_path": "~/.netrc",
@@ -78,11 +101,15 @@
 DEFAULT_SETUP = "default"
 # WILDS_SETUP = "wilds_algorithm"
 # ALGOS_WITH_UNLABELED_DATA = (DIV_DIS_ALGO_NAME,)
-# DIVERSITY_LAMBDA_KEY = "diversity_lambda"
+DIVERSITY_LAMBDA_KEY = "diversity_lambda"
 # DIVERSE_GRADIENTS_LOSS_COMPATIBLE_MODELS = (
 #     REDNECK_ENSEMBLE_KEY,
 #     "diverse_vit_switch_ensemble"
 # )
+
+
+def check_exp_config(experiment_config, config_path, logger=None):
+    pass
 
 
 # def check_exp_config(experiment_config, config_path, logger=make_logger()):
@@ -131,290 +158,291 @@ DEFAULT_SETUP = "default"
 #             )
 
 
-# def patch_exp_config(experiment_config):
+def patch_exp_config(experiment_config):
 
-#     def assert_key(key, config):
-#         assert key in config, f"{key} is expected to be in {config}"
+    def assert_key(key, config):
+        assert key in config, f"{key} is expected to be in {config}"
 
-#     if (
-#         LOGGING_CONFIG_KEY not in experiment_config
-#             or not complete_logging_config(
-#                 experiment_config[LOGGING_CONFIG_KEY]
-#             )
-#     ):
+    if (
+        LOGGING_CONFIG_KEY not in experiment_config
+            or not complete_logging_config(
+                experiment_config[LOGGING_CONFIG_KEY]
+            )
+    ):
 
-#         output_config = None
-#         gdrive_folder = None
-#         if LOGGING_CONFIG_KEY in experiment_config:
-#             logging_config = experiment_config[LOGGING_CONFIG_KEY]
-#             assert_key(GDRIVE_FOLDER_KEY, logging_config)
-#             assert_key(OUTPUT_CSV_KEY, logging_config)
-#             if logging_config[OUTPUT_CSV_KEY] is not None:
-#                 check_csv_line_config(
-#                     logging_config[OUTPUT_CSV_KEY]
-#                 )
-#             output_config \
-#                 = logging_config[OUTPUT_CSV_KEY]
-#             gdrive_folder = logging_config[GDRIVE_FOLDER_KEY]
+        output_config = None
+        gdrive_folder = None
+        if LOGGING_CONFIG_KEY in experiment_config:
+            logging_config = experiment_config[LOGGING_CONFIG_KEY]
+            assert_key(GDRIVE_FOLDER_KEY, logging_config)
+            assert_key(OUTPUT_CSV_KEY, logging_config)
+            if logging_config[OUTPUT_CSV_KEY] is not None:
+                check_csv_line_config(
+                    logging_config[OUTPUT_CSV_KEY]
+                )
+            output_config \
+                = logging_config[OUTPUT_CSV_KEY]
+            gdrive_folder = logging_config[GDRIVE_FOLDER_KEY]
 
-#         logging_config = copy.deepcopy(experiment_config["statistics"])
-#         logging_config.pop("batchwise")
-#         logging_config.pop("keep_modelwise")
-#         if output_config is not None:
-#             logging_config[OUTPUT_CSV_KEY] = output_config
-#         logging_config[GDRIVE_FOLDER_KEY] = gdrive_folder
-#         experiment_config[LOGGING_CONFIG_KEY] = logging_config
-#     else:
-#         assert (
-#                 experiment_config["statistics"]["use_wandb"]
-#             ==
-#                 experiment_config[LOGGING_CONFIG_KEY]["use_wandb"]
-#         )
-#         assert (
-#                 experiment_config["statistics"]["use_tb"]
-#             ==
-#                 experiment_config[LOGGING_CONFIG_KEY]["use_tb"]
-#         )
+        logging_config = copy.deepcopy(experiment_config["statistics"])
+        logging_config.pop("batchwise")
+        logging_config.pop("keep_modelwise")
+        if output_config is not None:
+            logging_config[OUTPUT_CSV_KEY] = output_config
+        logging_config[GDRIVE_FOLDER_KEY] = gdrive_folder
+        experiment_config[LOGGING_CONFIG_KEY] = logging_config
+    else:
+        assert (
+                experiment_config["statistics"]["use_wandb"]
+            ==
+                experiment_config[LOGGING_CONFIG_KEY]["use_wandb"]
+        )
+        assert (
+                experiment_config["statistics"]["use_tb"]
+            ==
+                experiment_config[LOGGING_CONFIG_KEY]["use_tb"]
+        )
 
-#     patches_config = experiment_config.get("patch", {})
-#     diversity_lambda = patches_config.get(DIVERSITY_LAMBDA_KEY)
-#     if diversity_lambda is not None:
-#         params_config = get_with_assert(experiment_config, "params")
-#         patch_diversity_lambda(params_config, diversity_lambda)
+    patches_config = experiment_config.get("patch", {})
+    diversity_lambda = patches_config.get(DIVERSITY_LAMBDA_KEY)
+    if diversity_lambda is not None:
+        params_config = get_with_assert(experiment_config, "params")
+        patch_diversity_lambda(params_config, diversity_lambda)
 
-#     unlabeled_data = patches_config.get(UNLABELED_DATASET_KEY)
-#     if unlabeled_data is not None:
-#         data_config = get_with_assert(experiment_config, "data")
-#         patch_unlabeled_data(data_config, unlabeled_data)
+    unlabeled_data = patches_config.get(UNLABELED_DATASET_KEY)
+    if unlabeled_data is not None:
+        data_config = get_with_assert(experiment_config, "data")
+        patch_unlabeled_data(data_config, unlabeled_data)
 
-#     paths_in_config = []
-#     for path_keyword in ["root"]:
-#         paths_in_config += find_nested_keys_by_keyword_in_config(
-#             experiment_config,
-#             path_keyword
-#         )
-#     normalize_paths(experiment_config, paths_in_config)
-
-
-# def patch_unlabeled_data(data_config, unlabeled_data):
-
-#     def get_indices_to_keep(dataset_config):
-#         dataset_type = get_with_assert(dataset_config, "type")
-#         if dataset_type in [IMAGENET_KEY, FROM_H5]:
-#             specific_config = get_with_assert(dataset_config, dataset_type)
-#             indices_to_keep = specific_config.get("indices_to_keep")
-#         else:
-#             indices_to_keep = None
-#         return indices_to_keep
-
-#     dataset_config = get_with_assert(data_config, "dataset")
-#     if "unlabeled_dataset" in data_config:
-#         # TODO(Alex | 13.02.2024): remove duplication and merge with else
-#         unlabeled_dataset_config = get_with_assert(data_config, "unlabeled_dataset")
-#         dataset_config = get_with_assert(data_config, "dataset")
-#         indices_to_keep_main = get_indices_to_keep(dataset_config)
-#         indices_to_keep_unlabeled = get_indices_to_keep(unlabeled_dataset_config)
-#         if indices_to_keep_main is not None:
-#             assert indices_to_keep_unlabeled is not None
-#             if unlabeled_data.get("same_indices", True):
-#                 assert indices_to_keep_main == indices_to_keep_unlabeled
-
-#     else:
-#         unlabeled_dataset_config = copy.deepcopy(dataset_config)
-#         unlabeled_dataset_config["split"] = get_with_assert(unlabeled_data, "split")
-#         dataset_type = get_with_assert(unlabeled_dataset_config, "type")
-#         if dataset_type in [IMAGENET_KEY, FROM_H5]:
-#             unlabeled_dataset_config_for_type = unlabeled_dataset_config[dataset_type]
-#             assert unlabeled_dataset_config_for_type.get("reverse_indices", {}).get("train", True), \
-#                 "For main dataset indices should be reversed or not given"
-#             unlabeled_dataset_config_for_type["reverse_indices"] = unlabeled_data.get(
-#                 "reverse_indices",
-#                 {"train": False}
-#             )
-#             # so that unlabeled dataset is not unloading and loading every time
-#             if dataset_type == FROM_H5:
-#                 unlabeled_dataset_config_for_type["total_samples"] \
-#                     = {"train": get_with_assert(unlabeled_dataset_config_for_type, "max_chunk")}
-#                 assert len(unlabeled_dataset_config_for_type.get("indices_to_keep", {})) > 0, \
-#                     "Should have indices_to_keep for unlabeled data"
-#     data_config[UNLABELED_DATASET_KEY] = unlabeled_dataset_config
+    paths_in_config = []
+    for path_keyword in ["root"]:
+        paths_in_config += find_nested_keys_by_keyword_in_config(
+            experiment_config,
+            path_keyword
+        )
+    normalize_paths(experiment_config, paths_in_config)
 
 
-# def patch_diversity_lambda(params_config, diversity_lambda):
+def patch_unlabeled_data(data_config, unlabeled_data):
 
-#     def patch_weights(
-#         task_loss_weight_nested_key,
-#         weights_nested_key,
-#         diversity_lambda,
-#         as_list=True
-#     ):
+    def get_indices_to_keep(dataset_config):
+        dataset_type = get_with_assert(dataset_config, "type")
+        if dataset_type in [IMAGENET_KEY, FROM_H5]:
+            specific_config = get_with_assert(dataset_config, dataset_type)
+            indices_to_keep = specific_config.get("indices_to_keep")
+        else:
+            indices_to_keep = None
+        return indices_to_keep
 
-#         def make_error_msg(arg_name, equal_to):
-#             return (
-#                 f"Should have {arg_name} == {equal_to}, "
-#                 f"when using {DIVERSITY_LAMBDA_KEY}"
-#             )
+    dataset_config = get_with_assert(data_config, "dataset")
+    if "unlabeled_dataset" in data_config:
+        # TODO(Alex | 13.02.2024): remove duplication and merge with else
+        unlabeled_dataset_config = get_with_assert(data_config, "unlabeled_dataset")
+        dataset_config = get_with_assert(data_config, "dataset")
+        indices_to_keep_main = get_indices_to_keep(dataset_config)
+        indices_to_keep_unlabeled = get_indices_to_keep(unlabeled_dataset_config)
+        if indices_to_keep_main is not None:
+            assert indices_to_keep_unlabeled is not None
+            if unlabeled_data.get("same_indices", True):
+                assert indices_to_keep_main == indices_to_keep_unlabeled
 
-#         gradient_based_losses_weights = get_with_assert(
-#             params_config,
-#             weights_nested_key
-#         )
-#         none_value = [None] if as_list else None
-#         error_msg = make_error_msg(weights_nested_key[-1], str(none_value))
-#         if as_list:
-#             assert gradient_based_losses_weights == none_value, error_msg
-#         else:
-#             assert gradient_based_losses_weights is none_value, error_msg
-
-#         task_loss_weight = get_with_assert(
-#             params_config,
-#             task_loss_weight_nested_key
-#         )
-#         assert task_loss_weight is None, \
-#             make_error_msg(task_loss_weight_nested_key[-1], "None")
-
-#         if as_list:
-#             if diversity_lambda == 0:
-#                 new_weights = []
-#             else:
-#                 new_weights = [diversity_lambda]
-#         else:
-#             new_weights = diversity_lambda
-
-#         update_dict_by_nested_key(
-#             params_config,
-#             weights_nested_key,
-#             new_weights
-#         )
-
-#         update_dict_by_nested_key(
-#             params_config,
-#             task_loss_weight_nested_key,
-#             (1 - diversity_lambda)
-#         )
-
-#     assert diversity_lambda >= 0 and diversity_lambda <= 1, \
-#         f"{DIVERSITY_LAMBDA_KEY} should be in [0, 1]"
-
-#     setup = params_config.get("setup", DEFAULT_SETUP)
-#     if setup == DEFAULT_SETUP:
-#         criterion_nested_key = ["train", "criterion"]
-#         criterion_config = get_with_assert(
-#             params_config,
-#             criterion_nested_key
-#         )
-#         if DIVERSE_GRADIENTS_LOSS_KEY in criterion_config:
-#             diverse_loss_nested_key = criterion_nested_key + [
-#                 DIVERSE_GRADIENTS_LOSS_KEY
-#             ]
-#             task_loss_weight_nested_key \
-#                 = diverse_loss_nested_key + [TASK_LOSS_WEIGHT_KEY]
-#             weights_nested_key \
-#                 = diverse_loss_nested_key + [GRADIENT_BASED_LOSSES_WEIGHTS_KEY]
-
-#             patch_weights(
-#                 task_loss_weight_nested_key,
-#                 weights_nested_key,
-#                 diversity_lambda,
-#                 as_list=True
-#             )
-
-#             if diversity_lambda == 0:
-
-#                 gradient_based_losses_nested_key \
-#                     = diverse_loss_nested_key + [GRADIENT_BASED_LOSSES_KEY]
-
-#                 update_dict_by_nested_key(
-#                     params_config,
-#                     gradient_based_losses_nested_key,
-#                     []
-#                 )
-#         else:
-
-#             divdis_config = get_with_assert(
-#                 criterion_config,
-#                 DIVDIS_LOSS_KEY
-#             )
-
-#             assert divdis_config.get(LAMBDA_KEY) is None, \
-#                 f"Should have {LAMBDA_KEY} == None, when patching diversity lambda"
-
-#             divdis_config[LAMBDA_KEY] = diversity_lambda
-#     else:
-#         assert setup == WILDS_SETUP
-#         divdis_config_nested_key = [
-#             "algorithm",
-#             "div_dis_algorithm"
-#         ]
-
-#         classification_loss_weight_nested_key \
-#             = divdis_config_nested_key + [CLASSIFICATION_LOSS_WEIGHT_KEY]
-#         divdis_weight_nested_key \
-#             = divdis_config_nested_key + [DIVDIS_DIVERSITY_WEIGHT_KEY]
-
-#         patch_weights(
-#             classification_loss_weight_nested_key,
-#             divdis_weight_nested_key,
-#             diversity_lambda,
-#             as_list=False
-#         )
+    else:
+        unlabeled_dataset_config = copy.deepcopy(dataset_config)
+        unlabeled_dataset_config["split"] = get_with_assert(unlabeled_data, "split")
+        dataset_type = get_with_assert(unlabeled_dataset_config, "type")
+        if dataset_type in [IMAGENET_KEY, FROM_H5]:
+            unlabeled_dataset_config_for_type = unlabeled_dataset_config[dataset_type]
+            assert unlabeled_dataset_config_for_type.get("reverse_indices", {}).get("train", True), \
+                "For main dataset indices should be reversed or not given"
+            unlabeled_dataset_config_for_type["reverse_indices"] = unlabeled_data.get(
+                "reverse_indices",
+                {"train": False}
+            )
+            # so that unlabeled dataset is not unloading and loading every time
+            if dataset_type == FROM_H5:
+                unlabeled_dataset_config_for_type["total_samples"] \
+                    = {"train": get_with_assert(unlabeled_dataset_config_for_type, "max_chunk")}
+                assert len(unlabeled_dataset_config_for_type.get("indices_to_keep", {})) > 0, \
+                    "Should have indices_to_keep for unlabeled data"
+    data_config[UNLABELED_DATASET_KEY] = unlabeled_dataset_config
 
 
-# def complete_logging_config(logging_config):
-#     return check_logging_config(logging_config, raise_if_wrong=False)
+def patch_diversity_lambda(params_config, diversity_lambda):
+
+    def patch_weights(
+        task_loss_weight_nested_key,
+        weights_nested_key,
+        diversity_lambda,
+        as_list=True
+    ):
+
+        def make_error_msg(arg_name, equal_to):
+            return (
+                f"Should have {arg_name} == {equal_to}, "
+                f"when using {DIVERSITY_LAMBDA_KEY}"
+            )
+
+        gradient_based_losses_weights = get_with_assert(
+            params_config,
+            weights_nested_key
+        )
+        none_value = [None] if as_list else None
+        error_msg = make_error_msg(weights_nested_key[-1], str(none_value))
+        if as_list:
+            assert gradient_based_losses_weights == none_value, error_msg
+        else:
+            assert gradient_based_losses_weights is none_value, error_msg
+
+        task_loss_weight = get_with_assert(
+            params_config,
+            task_loss_weight_nested_key
+        )
+        assert task_loss_weight is None, \
+            make_error_msg(task_loss_weight_nested_key[-1], "None")
+
+        if as_list:
+            if diversity_lambda == 0:
+                new_weights = []
+            else:
+                new_weights = [diversity_lambda]
+        else:
+            new_weights = diversity_lambda
+
+        update_dict_by_nested_key(
+            params_config,
+            weights_nested_key,
+            new_weights
+        )
+
+        update_dict_by_nested_key(
+            params_config,
+            task_loss_weight_nested_key,
+            (1 - diversity_lambda)
+        )
+
+    assert diversity_lambda >= 0 and diversity_lambda <= 1, \
+        f"{DIVERSITY_LAMBDA_KEY} should be in [0, 1]"
+
+    setup = params_config.get("setup", DEFAULT_SETUP)
+    # if setup == DEFAULT_SETUP:
+    assert setup == DEFAULT_SETUP
+    criterion_nested_key = ["train", "criterion"]
+    criterion_config = get_with_assert(
+        params_config,
+        criterion_nested_key
+    )
+    # if DIVERSE_GRADIENTS_LOSS_KEY in criterion_config:
+    #     diverse_loss_nested_key = criterion_nested_key + [
+    #         DIVERSE_GRADIENTS_LOSS_KEY
+    #     ]
+    #     task_loss_weight_nested_key \
+    #         = diverse_loss_nested_key + [TASK_LOSS_WEIGHT_KEY]
+    #     weights_nested_key \
+    #         = diverse_loss_nested_key + [GRADIENT_BASED_LOSSES_WEIGHTS_KEY]
+
+    #     patch_weights(
+    #         task_loss_weight_nested_key,
+    #         weights_nested_key,
+    #         diversity_lambda,
+    #         as_list=True
+    #     )
+
+    #     if diversity_lambda == 0:
+
+    #         gradient_based_losses_nested_key \
+    #             = diverse_loss_nested_key + [GRADIENT_BASED_LOSSES_KEY]
+
+    #         update_dict_by_nested_key(
+    #             params_config,
+    #             gradient_based_losses_nested_key,
+    #             []
+    #         )
+    # else:
+
+    divdis_config = get_with_assert(
+        criterion_config,
+        DIVDIS_LOSS_KEY
+    )
+
+    assert divdis_config.get(LAMBDA_KEY) is None, \
+        f"Should have {LAMBDA_KEY} == None, when patching diversity lambda"
+
+    divdis_config[LAMBDA_KEY] = diversity_lambda
+    # else:
+    #     assert setup == WILDS_SETUP
+    #     divdis_config_nested_key = [
+    #         "algorithm",
+    #         "div_dis_algorithm"
+    #     ]
+
+    #     classification_loss_weight_nested_key \
+    #         = divdis_config_nested_key + [CLASSIFICATION_LOSS_WEIGHT_KEY]
+    #     divdis_weight_nested_key \
+    #         = divdis_config_nested_key + [DIVDIS_DIVERSITY_WEIGHT_KEY]
+
+    #     patch_weights(
+    #         classification_loss_weight_nested_key,
+    #         divdis_weight_nested_key,
+    #         diversity_lambda,
+    #         as_list=False
+    #     )
 
 
-# def check_logging_config(logging_config, raise_if_wrong=True):
+def complete_logging_config(logging_config):
+    return check_logging_config(logging_config, raise_if_wrong=False)
 
-#     check_1 = False
-#     check_2 = False
 
-#     check_1 = check_dict(logging_config,
-#         [
-#             OUTPUT_CSV_KEY,
-#             GDRIVE_FOLDER_KEY,
-#             "use_wandb",
-#             "use_tb"
-#         ],
-#         optional_keys=[
-#             "wandb",
-#             "tb",
-#         ],
-#         check_reverse=True,
-#         raise_if_wrong=raise_if_wrong
-#     )
+def check_logging_config(logging_config, raise_if_wrong=True):
 
-#     if check_1:
-#         if logging_config["use_wandb"]:
+    check_1 = False
+    check_2 = False
 
-#             check_2 = "wandb" in logging_config
+    check_1 = check_dict(logging_config,
+        [
+            OUTPUT_CSV_KEY,
+            GDRIVE_FOLDER_KEY,
+            "use_wandb",
+            "use_tb"
+        ],
+        optional_keys=[
+            "wandb",
+            "tb",
+        ],
+        check_reverse=True,
+        raise_if_wrong=raise_if_wrong
+    )
 
-#             if raise_if_wrong:
-#                 assert check_2, f"{logging_config} is expected to conain \"wandb\""
+    if check_1:
+        if logging_config["use_wandb"]:
 
-#             if check_2:
-#                 check_2 = check_dict(
-#                     logging_config["wandb"],
-#                     [
-#                         "netrc_path"
-#                     ],
-#                     check_reverse=True,
-#                     raise_if_wrong=raise_if_wrong
-#                 )
-#         else:
-#             check_2 = True
+            check_2 = "wandb" in logging_config
 
-#         if check_2 and logging_config["use_tb"]:
+            if raise_if_wrong:
+                assert check_2, f"{logging_config} is expected to conain \"wandb\""
 
-#             check_2 = "tb" in logging_config
+            if check_2:
+                check_2 = check_dict(
+                    logging_config["wandb"],
+                    [
+                        "netrc_path"
+                    ],
+                    check_reverse=True,
+                    raise_if_wrong=raise_if_wrong
+                )
+        else:
+            check_2 = True
 
-#             if raise_if_wrong:
-#                 assert check_2, f"{logging_config} is expected to conain \"tb\""
+        # if check_2 and logging_config["use_tb"]:
 
-#             if check_2:
-#                 check_2 = check_tb_config(logging_config["tb"])
+        #     check_2 = "tb" in logging_config
 
-#     return check_1 and check_2
+        #     if raise_if_wrong:
+        #         assert check_2, f"{logging_config} is expected to conain \"tb\""
+
+        #     if check_2:
+        #         check_2 = check_tb_config(logging_config["tb"])
+
+    return check_1 and check_2
 
 
 # def check_config_consistency(model_config, params_config, data_config):
@@ -1186,17 +1214,17 @@ DEFAULT_SETUP = "default"
 #     check_csv_line_config(autogenerated_params_config[OUTPUT_CSV_KEY])
 
 
-# def check_csv_line_config(csv_config):
-#     check_dict(
-#         csv_config,
-#         [
-#             "path",
-#             "row_number",
-#             "spreadsheet_url",
-#             "worksheet_name"
-#         ],
-#         check_reverse=True
-#     )
+def check_csv_line_config(csv_config):
+    check_dict(
+        csv_config,
+        [
+            "path",
+            "row_number",
+            "spreadsheet_url",
+            "worksheet_name"
+        ],
+        check_reverse=True
+    )
 
 
 # def assert_type(object_to_check, expected_type, raise_if_wrong=True):

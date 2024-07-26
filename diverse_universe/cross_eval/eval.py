@@ -53,7 +53,8 @@ from diverse_universe.train.losses import (
     div_continous_unique_per_sample,
     div_continous_unique,
     div_var,
-    get_probs
+    get_probs,
+    record_diversity
     # METRICS,
     # div_ortega,
     # div_mean_logit,
@@ -85,9 +86,9 @@ from diverse_universe.local_models.ensemble import (
     # make_redneck_ensemble,
     # split_linear_layer
 )
-from diverse_universe.local_models.wrappers import (
-    wrap_model
-)
+# from diverse_universe.local_models.wrappers import (
+#     wrap_model
+# )
 from diverse_universe.train import (
     METRICS
 )
@@ -95,6 +96,7 @@ from diverse_universe.train import (
 #     make_ensembles_from_paths
 # )
 from diverse_universe.local_models.common import (
+    wrap_model,
     make_models_dict_from_huge_string
 )
 from diverse_universe.local_datasets.common import (
@@ -1039,62 +1041,62 @@ def evaluate_ensemble(
 #     return probs
 
 
-# TODO(Alex | 25.07.2024): re-balance if conditions
-def record_diversity(
-    res,
-    outputs,
-    stacked_outputs,
-    metrics_mappings,
-    labels=None,
-    name_prefix="",
-    detailed_results=None
-):
+# # TODO(Alex | 25.07.2024): re-balance if conditions
+# def record_diversity(
+#     res,
+#     outputs,
+#     stacked_outputs,
+#     metrics_mappings,
+#     labels=None,
+#     name_prefix="",
+#     detailed_results=None
+# ):
 
-    # metrics_mappings is a tuple of tuples:
-    # ((name_1, func_1), ... (name_k, func_k))
-    for metric_tuple in metrics_mappings:
+#     # metrics_mappings is a tuple of tuples:
+#     # ((name_1, func_1), ... (name_k, func_k))
+#     for metric_tuple in metrics_mappings:
 
-        metric_name = metric_tuple[0]
-        metric_key = name_prefix + metric_name
-        compute_metric = metric_tuple[1]
-        if metric_name not in res:
-            res[metric_key] = 0
-        if metric_name in PER_SAMPLE_METRIC_NAMES:
-            value = compute_metric(stacked_outputs)
-        elif metric_name == "div_ortega":
-            assert labels is not None
-            value = compute_metric(stacked_outputs, labels).item()
-        elif metric_name in [
-            "var",
-            "std",
-            "dis",
-            "max_var",
-            "div_different_preds",
-            "div_mean_logits",
-            "div_max_logit",
-            "div_entropy",
-            "div_max_prob",
-            "div_mean_prob",
-            "div_different_preds_per_model",
-            "div_continous_unique"
-        ]:
-            value = compute_metric(stacked_outputs).item()
-        else:
-            value = aggregate_tensors_by_func(
-                apply_pairwise(outputs, compute_metric)
-            ).item()
+#         metric_name = metric_tuple[0]
+#         metric_key = name_prefix + metric_name
+#         compute_metric = metric_tuple[1]
+#         if metric_name not in res:
+#             res[metric_key] = 0
+#         if metric_name in PER_SAMPLE_METRIC_NAMES:
+#             value = compute_metric(stacked_outputs)
+#         elif metric_name == "div_ortega":
+#             assert labels is not None
+#             value = compute_metric(stacked_outputs, labels).item()
+#         elif metric_name in [
+#             "var",
+#             "std",
+#             "dis",
+#             "max_var",
+#             "div_different_preds",
+#             "div_mean_logits",
+#             "div_max_logit",
+#             "div_entropy",
+#             "div_max_prob",
+#             "div_mean_prob",
+#             "div_different_preds_per_model",
+#             "div_continous_unique"
+#         ]:
+#             value = compute_metric(stacked_outputs).item()
+#         else:
+#             value = aggregate_tensors_by_func(
+#                 apply_pairwise(outputs, compute_metric)
+#             ).item()
 
-        if not torch.is_tensor(value):
-            res[metric_key] += value
+#         if not torch.is_tensor(value):
+#             res[metric_key] += value
 
-        if detailed_results is not None:
-            if metric_key in PER_SAMPLE_METRIC_NAMES:
-                if metric_key not in detailed_results:
-                    detailed_results[metric_key] = []
+#         if detailed_results is not None:
+#             if metric_key in PER_SAMPLE_METRIC_NAMES:
+#                 if metric_key not in detailed_results:
+#                     detailed_results[metric_key] = []
 
-                if metric_key in detailed_results:
-                    for subvalue in value:
-                        detailed_results[metric_key].append(subvalue.item())
+#                 if metric_key in detailed_results:
+#                     for subvalue in value:
+#                         detailed_results[metric_key].append(subvalue.item())
 
 
 # TODO(Alex | 15.05.2024): Make it readable

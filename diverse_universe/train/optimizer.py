@@ -1,5 +1,6 @@
 import torch
 import torch.optim as optim
+import copy
 from stuned.utility.utils import (
     add_custom_properties,
     error_or_print,
@@ -7,8 +8,10 @@ from stuned.utility.utils import (
     get_with_assert
 )
 from stuned.utility.imports import (
-    FROM_CLASS_KEY
+    FROM_CLASS_KEY,
+    make_from_class_ctor
 )
+import pytorch_warmup as warmup
 
 
 class NanCheckingOptimizer(torch.nn.Module):

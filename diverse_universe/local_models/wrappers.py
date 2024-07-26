@@ -29,14 +29,14 @@ sys.path.insert(0, get_project_root_path())
 #     get_human_categories,
 #     get_human_object_recognition_categories
 # )
-from diverse_universe.local_models.ensemble import (
-    # REDNECK_ENSEMBLE_KEY,
-    # SINGLE_MODEL_KEY,
-    # POE_KEY,
-    is_ensemble,
-    # make_redneck_ensemble,
-    # split_linear_layer
-)
+# from diverse_universe.local_models.ensemble import (
+#     # REDNECK_ENSEMBLE_KEY,
+#     # SINGLE_MODEL_KEY,
+#     # POE_KEY,
+#     is_ensemble,
+#     # make_redneck_ensemble,
+#     # split_linear_layer
+# )
 # from utility.utils import (
 #     add_custom_properties
 # )
@@ -69,7 +69,7 @@ IMAGENET_A_JSON = os.path.join(JSON_PATH, "imagenet_a_wnids.json")
 IMAGENET_R_JSON = os.path.join(JSON_PATH, "imagenet_r_wnids.json")
 
 
-def make_mvh_model_wrapper(model):
+def make_mvh_wrapper(model):
     return make_model_classes_wrapper(model, make_mvh_mapper)
 
 
@@ -172,30 +172,30 @@ def make_inr_wrapper(model):
     return make_model_classes_wrapper(model, make_imagenet_ar_mapper("inr"))
 
 
-def wrap_model(model, wrapper_type):
+# def wrap_model(model, wrapper_type):
 
-    if wrapper_type is None:
-        return model
+#     if wrapper_type is None:
+#         return model
 
-    if is_ensemble(model):
-        model = copy.deepcopy(model)
-        for i in range(len(model.submodels)):
-            model.submodels[i] = wrap_model(
-                model.submodels[i],
-                wrapper_type
-            )
-        if hasattr(model, "soup") and model.soup is not None:
-            model.soup = wrap_model(model.soup, wrapper_type)
-    else:
-        if wrapper_type == "mvh":
-            model = make_mvh_model_wrapper(model)
-        elif wrapper_type == "IN9":
-            model = make_in9_wrapper(model)
-        elif wrapper_type == "ina":
-            model = make_ina_wrapper(model)
-        elif wrapper_type == "inr":
-            model = make_inr_wrapper(model)
-        else:
-            raise_unknown("wrapper type", wrapper_type, "wrapper config")
+#     if is_ensemble(model):
+#         model = copy.deepcopy(model)
+#         for i in range(len(model.submodels)):
+#             model.submodels[i] = wrap_model(
+#                 model.submodels[i],
+#                 wrapper_type
+#             )
+#         if hasattr(model, "soup") and model.soup is not None:
+#             model.soup = wrap_model(model.soup, wrapper_type)
+#     else:
+#         if wrapper_type == "mvh":
+#             model = make_mvh_model_wrapper(model)
+#         elif wrapper_type == "IN9":
+#             model = make_in9_wrapper(model)
+#         elif wrapper_type == "ina":
+#             model = make_ina_wrapper(model)
+#         elif wrapper_type == "inr":
+#             model = make_inr_wrapper(model)
+#         else:
+#             raise_unknown("wrapper type", wrapper_type, "wrapper config")
 
-    return model
+#     return model
