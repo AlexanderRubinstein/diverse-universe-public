@@ -906,6 +906,7 @@ def make_cross_dict(
         )
         res = torch.load(save_path)
     else:
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
         res = {}
     for model_name, models in models_dict.items():
 
