@@ -2,10 +2,11 @@ import os
 import sys
 import torch
 import shutil
-import sklearn
+# import sklearn
+import sklearn.metrics as skmetrics
 import numpy as np
 import torch.nn.functional as F
-import tqdm
+from tqdm import tqdm
 from stuned.utility.utils import (
     raise_unknown,
     get_with_assert,
@@ -618,11 +619,16 @@ def compute_roc_auc(detailed_res_id, detailed_res_ood, verbose=True):
         'conf'
     )
 
-    roc_auc_conf = sklearn.metrics.roc_auc_score(labels_conf, confs)
+    # roc_auc_conf = sklearn.metrics.roc_auc_score(labels_conf, confs)
+    # # roc_auc_conf_sm = sklearn.metrics.roc_auc_score(labels_conf_sm, confs_sm)
+    # roc_auc_conf_0 = sklearn.metrics.roc_auc_score(labels_conf_0, confs_0)
+    # roc_auc_divs = sklearn.metrics.roc_auc_score(labels_div, divs)
+    # roc_auc_cont_uniq = sklearn.metrics.roc_auc_score(labels_cont_uniq, cont_uniq)
+    roc_auc_conf = skmetrics.roc_auc_score(labels_conf, confs)
     # roc_auc_conf_sm = sklearn.metrics.roc_auc_score(labels_conf_sm, confs_sm)
-    roc_auc_conf_0 = sklearn.metrics.roc_auc_score(labels_conf_0, confs_0)
-    roc_auc_divs = sklearn.metrics.roc_auc_score(labels_div, divs)
-    roc_auc_cont_uniq = sklearn.metrics.roc_auc_score(labels_cont_uniq, cont_uniq)
+    roc_auc_conf_0 = skmetrics.roc_auc_score(labels_conf_0, confs_0)
+    roc_auc_divs = skmetrics.roc_auc_score(labels_div, divs)
+    roc_auc_cont_uniq = skmetrics.roc_auc_score(labels_cont_uniq, cont_uniq)
 
 
     ##########
