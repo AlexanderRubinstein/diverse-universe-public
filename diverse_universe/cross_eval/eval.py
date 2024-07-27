@@ -178,8 +178,8 @@ sys.path.pop(0)
 #     f"{os.environ.get('USER')}-{os.environ.get('SLURM_JOB_ID')}",
 # )
 ADJUSTED_GROUPWISE_KEY = "_adjusted"
-IN_VAL_CACHED_2LAYER_PATH = \
-    "/mnt/qb/work/oh/arubinstein17/cache/ImageNet1k/val_cache/ed4f10f4ddeb07f1d876_torch_load_block_-1_model_imagenet1k_dataset_1_epochs_50000_samples.hdf5"
+# IN_VAL_CACHED_2LAYER_PATH = \
+#     "/mnt/qb/work/oh/arubinstein17/cache/ImageNet1k/val_cache/ed4f10f4ddeb07f1d876_torch_load_block_-1_model_imagenet1k_dataset_1_epochs_50000_samples.hdf5"
 
 
 def patch_eval_config(experiment_config):
@@ -204,7 +204,11 @@ def cross_eval(
     exp_type = get_with_assert(experiment_config, "experiment_type")
     dataloaders_dict = prepare_dataloaders(
         exp_type,
-        eval_type
+        eval_type,
+        cached_datasets_info=get_with_assert(
+            experiment_config,
+            "cached_datasets_info"
+        )
     )
 
     local_results_save_path = os.path.join(
@@ -300,32 +304,33 @@ def prepare_model_group(model_group_config):
     return models, model_name_to_prop
 
 
-def prepare_dataloaders(exp_type, eval_type):
+def prepare_dataloaders(exp_type, eval_type, cached_datasets_info):
     if exp_type == "deit3b_dataloaders":
-        return prepare_deit3b_dataloaders(eval_type)
-    elif exp_type == "waterbirds_dataloaders":
-        return prepare_waterbirds_dataloaders(eval_type)
-    elif exp_type == "debug":
-        return prepare_debug_dataloaders()
+        return prepare_deit3b_dataloaders(eval_type, cached_datasets_info)
+    # elif exp_type == "waterbirds_dataloaders":
+    #     return prepare_waterbirds_dataloaders(eval_type)
+    # elif exp_type == "debug":
+    #     return prepare_debug_dataloaders(cached_datasets_info)
     else:
         raise_unknown(exp_type, "experiment_type", "prepare_dataloaders")
 
 
-def prepare_debug_dataloaders():
-    # TODO(Alex | 23.07.2024): Move paths to config
-    cached_dataloaders_deit3b_dict = make_cached_dataloaders(
-        {
-            "in_val": IN_VAL_CACHED_2LAYER_PATH,
-            "imagenet_a": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/imagenet_a/f37703ce0aea0e55ab2c_torch_load_block_-1_model_imagenet_a_dataset_1_epochs_7500_samples.hdf5",
-            "imagenet_r": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/imagenet_r/c9fe46d6544688f46907_torch_load_block_-1_model_imagenet_r_dataset_1_epochs_30000_samples.hdf5"
-        }
-    )
-    deit3b_2layers_all_dataloaders_dict = {
-        "imagenet_a": (cached_dataloaders_deit3b_dict["imagenet_a"], "ina"),
-        "imagenet_r": (cached_dataloaders_deit3b_dict["imagenet_r"], "inr"),
-        "in_val": cached_dataloaders_deit3b_dict["in_val"]
-    }
-    return deit3b_2layers_all_dataloaders_dict
+# def prepare_debug_dataloaders():
+#     # TODO(Alex | 23.07.2024): Move paths to config
+#     # ??
+#     cached_dataloaders_deit3b_dict = make_cached_dataloaders(
+#         {
+#             "in_val": IN_VAL_CACHED_2LAYER_PATH,
+#             "imagenet_a": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/imagenet_a/f37703ce0aea0e55ab2c_torch_load_block_-1_model_imagenet_a_dataset_1_epochs_7500_samples.hdf5",
+#             "imagenet_r": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/imagenet_r/c9fe46d6544688f46907_torch_load_block_-1_model_imagenet_r_dataset_1_epochs_30000_samples.hdf5"
+#         }
+#     )
+#     deit3b_2layers_all_dataloaders_dict = {
+#         "imagenet_a": (cached_dataloaders_deit3b_dict["imagenet_a"], "ina"),
+#         "imagenet_r": (cached_dataloaders_deit3b_dict["imagenet_r"], "inr"),
+#         "in_val": cached_dataloaders_deit3b_dict["in_val"]
+#     }
+#     return deit3b_2layers_all_dataloaders_dict
 
 
 def subset_dict_by_keys(input_dict, keys):
@@ -334,87 +339,87 @@ def subset_dict_by_keys(input_dict, keys):
     }
 
 
-def prepare_waterbirds_dataloaders(eval_type, batch_size=128, num_workers=4):
+# def prepare_waterbirds_dataloaders(eval_type, batch_size=128, num_workers=4):
 
-    waterbirds_config_divdis = {
-        "type": "waterbirds",
-        'waterbirds': {
-            "root_dir": None,
-            "keep_metadata": (eval_type == "ood_gen"),
-            "use_waterbirds_divdis": True
-        }
-    }
+#     waterbirds_config_divdis = {
+#         "type": "waterbirds",
+#         'waterbirds': {
+#             "root_dir": None,
+#             "keep_metadata": (eval_type == "ood_gen"),
+#             "use_waterbirds_divdis": True
+#         }
+#     }
 
-    waterbirds_train_dataloader_divdis, waterbirds_val_dataloaders_divdis, _ = make_dataloaders(
-        waterbirds_config_divdis,
-        train_batch_size=batch_size,
-        eval_batch_size=batch_size,
-        num_workers=num_workers,
-        to_train=True
-    )
-    waterbirds_val_dataloaders_divdis["train"] = waterbirds_train_dataloader_divdis
+#     waterbirds_train_dataloader_divdis, waterbirds_val_dataloaders_divdis, _ = make_dataloaders(
+#         waterbirds_config_divdis,
+#         train_batch_size=batch_size,
+#         eval_batch_size=batch_size,
+#         num_workers=num_workers,
+#         to_train=True
+#     )
+#     waterbirds_val_dataloaders_divdis["train"] = waterbirds_train_dataloader_divdis
 
-    if eval_type == "ood_gen":
+#     if eval_type == "ood_gen":
 
-        waterbirds_config = {
-            "type": "waterbirds",
-            'waterbirds': {
-                "root_dir": "/mnt/qb/work/oh/arubinstein17/cache/wilds/waterbirds",
-                # "root_dir": SCRATCH_LOCAL,
-                # "root_dir": "./",
-                "keep_metadata": True,
-                # "eval_transforms": "ImageNetEval"
-            }
-        }
+#         waterbirds_config = {
+#             "type": "waterbirds",
+#             'waterbirds': {
+#                 "root_dir": "/mnt/qb/work/oh/arubinstein17/cache/wilds/waterbirds",
+#                 # "root_dir": SCRATCH_LOCAL,
+#                 # "root_dir": "./",
+#                 "keep_metadata": True,
+#                 # "eval_transforms": "ImageNetEval"
+#             }
+#         }
 
-        waterbirds_train_dataloader, waterbirds_val_dataloaders, _ = make_dataloaders(
-            waterbirds_config,
-            train_batch_size=batch_size,
-            eval_batch_size=batch_size,
-            num_workers=num_workers,
-            to_train=True
-        )
-        waterbirds_val_dataloaders["train"] = waterbirds_train_dataloader
+#         waterbirds_train_dataloader, waterbirds_val_dataloaders, _ = make_dataloaders(
+#             waterbirds_config,
+#             train_batch_size=batch_size,
+#             eval_batch_size=batch_size,
+#             num_workers=num_workers,
+#             to_train=True
+#         )
+#         waterbirds_val_dataloaders["train"] = waterbirds_train_dataloader
 
-        waterbirds_config_with_transforms = {
-            "type": "waterbirds",
-            'waterbirds': {
-                "root_dir": "/mnt/qb/work/oh/arubinstein17/cache/wilds/waterbirds",
-                # "root_dir": SCRATCH_LOCAL,
-                # "root_dir": "./",
-                "keep_metadata": True,
-                "eval_transforms": "ImageNetEval"
-            }
-        }
+#         waterbirds_config_with_transforms = {
+#             "type": "waterbirds",
+#             'waterbirds': {
+#                 "root_dir": "/mnt/qb/work/oh/arubinstein17/cache/wilds/waterbirds",
+#                 # "root_dir": SCRATCH_LOCAL,
+#                 # "root_dir": "./",
+#                 "keep_metadata": True,
+#                 "eval_transforms": "ImageNetEval"
+#             }
+#         }
 
-        waterbirds_train_dataloader_with_transforms, waterbirds_val_dataloaders_with_transforms, _ = make_dataloaders(
-            waterbirds_config_with_transforms,
-            train_batch_size=batch_size,
-            eval_batch_size=batch_size,
-            num_workers=num_workers,
-            to_train=True
-        )
+#         waterbirds_train_dataloader_with_transforms, waterbirds_val_dataloaders_with_transforms, _ = make_dataloaders(
+#             waterbirds_config_with_transforms,
+#             train_batch_size=batch_size,
+#             eval_batch_size=batch_size,
+#             num_workers=num_workers,
+#             to_train=True
+#         )
 
-        waterbirds_val_dataloaders_with_transforms["train"] = waterbirds_train_dataloader_with_transforms
+#         waterbirds_val_dataloaders_with_transforms["train"] = waterbirds_train_dataloader_with_transforms
 
-        all_waterbirds_dataloaders_dict = (
-                waterbirds_val_dataloaders
-            |
-                update_key_names(
-                    waterbirds_val_dataloaders_with_transforms,
-                    "_with_transform"
-                )
-        )
-    else:
-        assert eval_type == "ood_det"
-        all_waterbirds_dataloaders_dict = {}
+#         all_waterbirds_dataloaders_dict = (
+#                 waterbirds_val_dataloaders
+#             |
+#                 update_key_names(
+#                     waterbirds_val_dataloaders_with_transforms,
+#                     "_with_transform"
+#                 )
+#         )
+#     else:
+#         assert eval_type == "ood_det"
+#         all_waterbirds_dataloaders_dict = {}
 
-    all_waterbirds_dataloaders_dict |= update_key_names(
-        waterbirds_val_dataloaders_divdis,
-        "_divdis"
-    )
+#     all_waterbirds_dataloaders_dict |= update_key_names(
+#         waterbirds_val_dataloaders_divdis,
+#         "_divdis"
+#     )
 
-    return all_waterbirds_dataloaders_dict
+#     return all_waterbirds_dataloaders_dict
 
 
 def update_key_names(d, suffix):
@@ -425,17 +430,27 @@ def update_key_names(d, suffix):
     }
 
 
-def prepare_deit3b_dataloaders(eval_type):
+def prepare_deit3b_dataloaders(eval_type, cached_datasets_info):
 
     # assert exp_type == "deit3b"
     # Deit3B
 
-    # TODO(Alex | 23.07.2024): Move paths to config
-    in_c_dataloaders = extract_in_c_paths(
-        "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/",
-        [1, 5],
-        "torch_load_block_-1_model"
-    )
+    # # TODO(Alex | 23.07.2024): Move paths to config
+    # # in_c_dataloaders = extract_in_c_paths(
+    # in_c_dataset_paths = extract_in_c_paths(
+    #     base_path=get_with_assert(
+    #         cached_datasets_info,
+    #         "base_path"
+    #     ),
+    #     strengths=cached_datasets_info.get("in_c_strengths", [1, 5]),
+    #     # filename_substring="torch_load_block_-1_model"
+    #     filename_substring=get_with_assert(
+    #         cached_datasets_info,
+    #         "filename_substring"
+    #     )
+    # )
+
+    # path_mapping = get_with_assert(cached_datasets_info, "path_mapping")
 
     # in_val_5k_hard = make_hdf5_dataloader_from_path(
     #     in_val_cached_2layer_path,
@@ -463,113 +478,186 @@ def prepare_deit3b_dataloaders(eval_type):
     #     total_samples=IMAGENET_TRAIN_NUM_SAMPLES
     # )
 
-    cached_dataloaders_deit3b_dict = make_cached_dataloaders(
-        {
-            "in_val": IN_VAL_CACHED_2LAYER_PATH,
-        } | in_c_dataloaders
-    )
+    # cached_datasets:
+    # ood_det_keys: ??
+    # ood_gen_keys: ??
+    # path_mapping: ??
+    # base_path: ??
+    # filename_substring: ??
+    # ?? read from dict in code
 
-    in_c_dataloaders_dict = subset_dict_by_keys(
-        cached_dataloaders_deit3b_dict,
-        in_c_dataloaders.keys()
-    )
+    #     cached_datasets_info ??
 
-    deit3b_2layers_all_dataloaders_dict = {
-        "in_val": cached_dataloaders_deit3b_dict["in_val"]
-    }
+    # cached_dataloaders_deit3b_dict = make_cached_dataloaders(
+    #     {
+    #         # "in_val": IN_VAL_CACHED_2LAYER_PATH,
+    #         "in_val": get_with_assert(path_mapping, "in_val"),
+    #     } | in_c_dataloaders
+    # )
 
-    # TODO(Alex | 23.07.2024): Move paths to config
-    cached_dataloaders_deit3b_dict |= make_cached_dataloaders(
-        {
-            "iNaturalist": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/iNaturalist/214988c198612f2682e6_torch_load_block_-1_model_iNaturalist_dataset_1_epochs_10000_samples.hdf5",
-            "OpenImages": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/openimages/816f6e9e7fa686d093e8_torch_load_block_-1_model_openimages_dataset_1_epochs_17632_samples.hdf5"
-        }
-    )
+    # in_c_dataloaders_dict = subset_dict_by_keys(
+    #     cached_dataloaders_deit3b_dict,
+    #     in_c_dataloaders.keys()
+    # )
 
-    if eval_type == "ood_gen":
+    # deit3b_2layers_all_dataloaders_dict = {
+    #     "in_val": cached_dataloaders_deit3b_dict["in_val"]
+    # }
 
-        # TODO(Alex | 23.07.2024): Move paths to config
-        in_d_dataloaders = {
-            "in_d_background": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/background/656ee9569bfbcf377ea9_torch_load_block_-1_model_background_dataset_1_epochs_3764_samples.hdf5",
-            "in_d_texture": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/texture/8ecfa96f9135692c2cf2_torch_load_block_-1_model_texture_dataset_1_epochs_498_samples.hdf5",
-            "in_d_material": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/material/116c69294993da7f1b7f_torch_load_block_-1_model_material_dataset_1_epochs_573_samples.hdf5"
-        }
+    # # TODO(Alex | 23.07.2024): Move paths to config
+    # cached_dataloaders_deit3b_dict = {} # tmp
+    # cached_dataloaders_deit3b_dict |= make_cached_dataloaders(
+    #     {
+    #         "iNaturalist": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/iNaturalist/214988c198612f2682e6_torch_load_block_-1_model_iNaturalist_dataset_1_epochs_10000_samples.hdf5",
+    #         # "iNaturalist": get_with_assert(path_mapping, "iNaturalist"),
+    #         "OpenImages": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/openimages/816f6e9e7fa686d093e8_torch_load_block_-1_model_openimages_dataset_1_epochs_17632_samples.hdf5"
+    #     }
+    # )
 
-        # TODO(Alex | 23.07.2024): Move paths to config
-        cached_dataloaders_deit3b_dict |= make_cached_dataloaders(
-            {
-            "imagenet_a": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/imagenet_a/f37703ce0aea0e55ab2c_torch_load_block_-1_model_imagenet_a_dataset_1_epochs_7500_samples.hdf5",
-            "imagenet_r": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/imagenet_r/c9fe46d6544688f46907_torch_load_block_-1_model_imagenet_r_dataset_1_epochs_30000_samples.hdf5",
-            "mixed_rand": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/mixed_rand/bf802cc68d4a8b524c38_torch_load_block_-1_model_mixed_rand_dataset_1_epochs_4050_samples.hdf5",
-            "mixed_same": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/mixed_same/03839176c08efd3bf9e0_torch_load_block_-1_model_mixed_same_dataset_1_epochs_4050_samples.hdf5",
-            "only_bg_t": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/only_bg_t/82c8996731b022fe6a5f_torch_load_block_-1_model_only_bg_t_dataset_1_epochs_4050_samples.hdf5",
-            "no_fg": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/no_fg/5cc8e5036cec4c12a397_torch_load_block_-1_model_no_fg_dataset_1_epochs_4050_samples.hdf5",
-            "mixed_next": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/mixed_next/0cbfd71928f9d1f69cd2_torch_load_block_-1_model_mixed_next_dataset_1_epochs_4050_samples.hdf5",
-            "only_fg": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/only_fg/3de26782660a000fb937_torch_load_block_-1_model_only_fg_dataset_1_epochs_4050_samples.hdf5",
-            "original": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/original/d5967a112b317104ccb5_torch_load_block_-1_model_original_dataset_1_epochs_4050_samples.hdf5",
-            "only_bg_b": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/only_bg_b/b2005edd362a19e1ae41_torch_load_block_-1_model_only_bg_b_dataset_1_epochs_4050_samples.hdf5",
-            "stylized": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/stylized/6a559f1b1becae879c79_torch_load_block_-1_model_stylized_dataset_1_epochs_800_samples.hdf5",
-            "sketch": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/sketch/ff0161b6b924453b0c68_torch_load_block_-1_model_sketch_dataset_1_epochs_800_samples.hdf5",
-            "edge": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/edge/7f7ea165dfb604e47f3c_torch_load_block_-1_model_edge_dataset_1_epochs_160_samples.hdf5",
-            "silhouette": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/silhouette/9def5ec3aecf90d0515c_torch_load_block_-1_model_silhouette_dataset_1_epochs_160_samples.hdf5",
-            "cue-conflict": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/cue-conflict/5f1aa995aa7afccf46e8_torch_load_block_-1_model_cue-conflict_dataset_1_epochs_1280_samples.hdf5",
-            # "in_val": in_val_cached_2layer_path,
-            } | in_d_dataloaders
-        )
 
-        deit3b_2layers_all_dataloaders_dict |= {
-            "imagenet_a": (cached_dataloaders_deit3b_dict["imagenet_a"], "ina"),
-            "imagenet_r": (cached_dataloaders_deit3b_dict["imagenet_r"], "inr"),
-            "mixed_rand": (cached_dataloaders_deit3b_dict["mixed_rand"], "IN9"),
-            "mixed_next": (cached_dataloaders_deit3b_dict["mixed_next"], "IN9"),
-            "cue-conflict": (cached_dataloaders_deit3b_dict["cue-conflict"], "mvh"),
-            "stylized": (cached_dataloaders_deit3b_dict["stylized"], "mvh"),
-            "iNaturalist": cached_dataloaders_deit3b_dict["iNaturalist"],
-            "OpenImages": cached_dataloaders_deit3b_dict["OpenImages"]
-            # "in_val": cached_dataloaders_deit3b_dict["in_val"],
-            # "in_val_5k_hard": in_val_5k_hard,
-            # "in_val_45k_easy": in_val_45k_easy,
-            # "in_train_3068_hard": in_train_3068_hard,
-            # "fog_1": cached_dataloaders_deit3b_dict["fog_1"],
-            # "fog_5": cached_dataloaders_deit3b_dict["fog_5"],
-            # "defocus_blur_1": cached_dataloaders_deit3b_dict["defocus_blur_1"],
-            # "defocus_blur_5": cached_dataloaders_deit3b_dict["defocus_blur_5"],
-        }
 
-        # deit3b_2layers_all_dataloaders_dict |= {
-        #     key: cached_dataloaders_deit3b_dict[key] for key in in_c_dataloaders.keys()
-        # }
+    # if eval_type == "ood_gen": # ?? remove
 
-        # deit3b_2layers_all_dataloaders_dict |= in_c_dataloaders_dict
+    #     # # TODO(Alex | 23.07.2024): Move paths to config
+    #     # in_d_dataloaders = {
+    #     #     "in_d_background": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/background/656ee9569bfbcf377ea9_torch_load_block_-1_model_background_dataset_1_epochs_3764_samples.hdf5",
+    #     #     "in_d_texture": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/texture/8ecfa96f9135692c2cf2_torch_load_block_-1_model_texture_dataset_1_epochs_498_samples.hdf5",
+    #     #     "in_d_material": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/material/116c69294993da7f1b7f_torch_load_block_-1_model_material_dataset_1_epochs_573_samples.hdf5"
+    #     # }
 
-        deit3b_2layers_all_dataloaders_dict |= subset_dict_by_keys(
-            cached_dataloaders_deit3b_dict,
-            in_d_dataloaders.keys()
-        )
+    #     # TODO(Alex | 23.07.2024): Move paths to config
+    #     cached_dataloaders_deit3b_dict |= make_cached_dataloaders(
+    #         {
+    #         "imagenet_a": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/imagenet_a/f37703ce0aea0e55ab2c_torch_load_block_-1_model_imagenet_a_dataset_1_epochs_7500_samples.hdf5",
+    #         "imagenet_r": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/imagenet_r/c9fe46d6544688f46907_torch_load_block_-1_model_imagenet_r_dataset_1_epochs_30000_samples.hdf5",
+    #         "mixed_rand": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/mixed_rand/bf802cc68d4a8b524c38_torch_load_block_-1_model_mixed_rand_dataset_1_epochs_4050_samples.hdf5",
+    #         "mixed_same": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/mixed_same/03839176c08efd3bf9e0_torch_load_block_-1_model_mixed_same_dataset_1_epochs_4050_samples.hdf5",
+    #         "only_bg_t": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/only_bg_t/82c8996731b022fe6a5f_torch_load_block_-1_model_only_bg_t_dataset_1_epochs_4050_samples.hdf5",
+    #         "no_fg": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/no_fg/5cc8e5036cec4c12a397_torch_load_block_-1_model_no_fg_dataset_1_epochs_4050_samples.hdf5",
+    #         "mixed_next": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/mixed_next/0cbfd71928f9d1f69cd2_torch_load_block_-1_model_mixed_next_dataset_1_epochs_4050_samples.hdf5",
+    #         "only_fg": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/only_fg/3de26782660a000fb937_torch_load_block_-1_model_only_fg_dataset_1_epochs_4050_samples.hdf5",
+    #         "original": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/original/d5967a112b317104ccb5_torch_load_block_-1_model_original_dataset_1_epochs_4050_samples.hdf5",
+    #         "only_bg_b": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/only_bg_b/b2005edd362a19e1ae41_torch_load_block_-1_model_only_bg_b_dataset_1_epochs_4050_samples.hdf5",
+    #         "stylized": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/stylized/6a559f1b1becae879c79_torch_load_block_-1_model_stylized_dataset_1_epochs_800_samples.hdf5",
+    #         "sketch": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/sketch/ff0161b6b924453b0c68_torch_load_block_-1_model_sketch_dataset_1_epochs_800_samples.hdf5",
+    #         "edge": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/edge/7f7ea165dfb604e47f3c_torch_load_block_-1_model_edge_dataset_1_epochs_160_samples.hdf5",
+    #         "silhouette": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/silhouette/9def5ec3aecf90d0515c_torch_load_block_-1_model_silhouette_dataset_1_epochs_160_samples.hdf5",
+    #         "cue-conflict": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/cue-conflict/5f1aa995aa7afccf46e8_torch_load_block_-1_model_cue-conflict_dataset_1_epochs_1280_samples.hdf5",
+    #         # "in_val": in_val_cached_2layer_path,
+    #         }
+    #         # | in_d_dataloaders
+    #     )
 
-        # deit3b_2layers_all_dataloaders_dict |= {
-        #     key: cached_dataloaders_deit3b_dict[key] for key in in_d_dataloaders.keys()
-        # }
-    else:
-        assert eval_type == "ood_det"
-        # cached_dataloaders_deit3b_dict |= make_cached_dataloaders(
-        #     {
-        #         "iNaturalist": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/iNaturalist/214988c198612f2682e6_torch_load_block_-1_model_iNaturalist_dataset_1_epochs_10000_samples.hdf5",
-        #         "OpenImages": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/openimages/816f6e9e7fa686d093e8_torch_load_block_-1_model_openimages_dataset_1_epochs_17632_samples.hdf5"
-        #     }
+    #     # for dataset_key in get_with_assert(cached_datasets_info, "ood_gen_keys"):
+    #     #     dataset_entry = get_with_assert(cached_datasets_info, dataset_key)
+    #     #     # if isinstance(dataset_entry, tuple):
+    #     #     #     dataset_path, wrapper_name = dataset_entry
+    #     #     # else:
+    #     #     #     dataset_path, wrapper_name = dataset_entry, None
+    #     #     deit3b_2layers_all_dataloaders_dict[dataset_key] = dataset_entry
+
+    #     deit3b_2layers_all_dataloaders_dict |= {
+    #         "imagenet_a": (cached_dataloaders_deit3b_dict["imagenet_a"], "ina"),
+    #         "imagenet_r": (cached_dataloaders_deit3b_dict["imagenet_r"], "inr"),
+    #         "mixed_rand": (cached_dataloaders_deit3b_dict["mixed_rand"], "IN9"),
+    #         "mixed_next": (cached_dataloaders_deit3b_dict["mixed_next"], "IN9"),
+    #         "cue-conflict": (cached_dataloaders_deit3b_dict["cue-conflict"], "mvh"),
+    #         "stylized": (cached_dataloaders_deit3b_dict["stylized"], "mvh"),
+    #         "iNaturalist": cached_dataloaders_deit3b_dict["iNaturalist"],
+    #         "OpenImages": cached_dataloaders_deit3b_dict["OpenImages"]
+    #         # "in_val": cached_dataloaders_deit3b_dict["in_val"],
+    #         # "in_val_5k_hard": in_val_5k_hard,
+    #         # "in_val_45k_easy": in_val_45k_easy,
+    #         # "in_train_3068_hard": in_train_3068_hard,
+    #         # "fog_1": cached_dataloaders_deit3b_dict["fog_1"],
+    #         # "fog_5": cached_dataloaders_deit3b_dict["fog_5"],
+    #         # "defocus_blur_1": cached_dataloaders_deit3b_dict["defocus_blur_1"],
+    #         # "defocus_blur_5": cached_dataloaders_deit3b_dict["defocus_blur_5"],
+    #     }
+
+    #     # deit3b_2layers_all_dataloaders_dict |= {
+    #     #     key: cached_dataloaders_deit3b_dict[key] for key in in_c_dataloaders.keys()
+    #     # }
+
+    #     # deit3b_2layers_all_dataloaders_dict |= in_c_dataloaders_dict
+
+    #     # deit3b_2layers_all_dataloaders_dict |= subset_dict_by_keys(
+    #     #     cached_dataloaders_deit3b_dict,
+    #     #     in_d_dataloaders.keys()
+    #     # )
+
+    #     # deit3b_2layers_all_dataloaders_dict |= {
+    #     #     key: cached_dataloaders_deit3b_dict[key] for key in in_d_dataloaders.keys()
+    #     # }
+    # else:
+    #     assert eval_type == "ood_det"
+    #     # cached_dataloaders_deit3b_dict |= make_cached_dataloaders(
+    #     #     {
+    #     #         "iNaturalist": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/iNaturalist/214988c198612f2682e6_torch_load_block_-1_model_iNaturalist_dataset_1_epochs_10000_samples.hdf5",
+    #     #         "OpenImages": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/openimages/816f6e9e7fa686d093e8_torch_load_block_-1_model_openimages_dataset_1_epochs_17632_samples.hdf5"
+    #     #     }
+    #     # )
+    #     deit3b_2layers_all_dataloaders_dict |= {
+    #         # "imagenet_a": (cached_dataloaders_deit3b_dict["imagenet_a"], "ina"),
+    #         # "imagenet_r": (cached_dataloaders_deit3b_dict["imagenet_r"], "inr"),
+    #         # "mixed_rand": (cached_dataloaders_deit3b_dict["mixed_rand"], "IN9"),
+    #         # "mixed_next": (cached_dataloaders_deit3b_dict["mixed_next"], "IN9"),
+    #         # "cue-conflict": (cached_dataloaders_deit3b_dict["cue-conflict"], "mvh"),
+    #         # "in_val": cached_dataloaders_deit3b_dict["in_val"],
+    #         "iNaturalist": cached_dataloaders_deit3b_dict["iNaturalist"],
+    #         "OpenImages": cached_dataloaders_deit3b_dict["OpenImages"]
+    #         # "in_train_3068_hard": in_train_3068_hard
+    #     }
+    # deit3b_2layers_all_dataloaders_dict |= in_c_dataloaders_dict
+
+    # path_mapping = get_with_assert(cached_datasets_info, "path_mapping")
+
+        # dataset_names = get_with_assert(
+        #     cached_datasets_info,
+        #     f"{eval_type}_keys"
         # )
-        deit3b_2layers_all_dataloaders_dict |= {
-            # "imagenet_a": (cached_dataloaders_deit3b_dict["imagenet_a"], "ina"),
-            # "imagenet_r": (cached_dataloaders_deit3b_dict["imagenet_r"], "inr"),
-            # "mixed_rand": (cached_dataloaders_deit3b_dict["mixed_rand"], "IN9"),
-            # "mixed_next": (cached_dataloaders_deit3b_dict["mixed_next"], "IN9"),
-            # "cue-conflict": (cached_dataloaders_deit3b_dict["cue-conflict"], "mvh"),
-            # "in_val": cached_dataloaders_deit3b_dict["in_val"],
-            "iNaturalist": cached_dataloaders_deit3b_dict["iNaturalist"],
-            "OpenImages": cached_dataloaders_deit3b_dict["OpenImages"]
-            # "in_train_3068_hard": in_train_3068_hard
-        }
-    deit3b_2layers_all_dataloaders_dict |= in_c_dataloaders_dict
+        # dataset_paths_dict |= in_c_dataset_paths
+    # for dataset_key in get_with_assert(
+    #     cached_datasets_info,
+    #     f"{eval_type}_keys"
+    # ):
+    #     dataset_entry = get_with_assert(cached_datasets_info, dataset_key)
+    #     # if isinstance(dataset_entry, list):
+    #     #     dataset_path, wrapper_name = dataset_entry
+    #     # else:
+    #     #     dataset_path, wrapper_name = dataset_entry, None
+    #     # in_c_dataset_paths ??
+    #     # wrappers
+
+    #     deit3b_2layers_all_dataloaders_dict[dataset_key] = dataset_entry
+
+    # in_c_dataloaders_dict = subset_dict_by_keys(
+    #     cached_dataloaders_deit3b_dict,
+    #     get_with_assert(
+    #         cached_datasets_info,
+    #         f"{eval_type}_keys"
+    #     )
+    # )
+
+    deit3b_2layers_all_dataloaders_dict = make_cached_dataloaders(
+        subset_dict_by_keys(
+            get_with_assert(cached_datasets_info, "path_mapping"),
+            get_with_assert(cached_datasets_info, f"{eval_type}_keys")
+        )
+    )
+
+    wrappers_dict = cached_datasets_info.get("wrappers", {})
+
+    # deit3b_2layers_all_dataloaders_dict ??
+
+    # if len(wr)
+    # for wrapper_key
+    for dataset_name in deit3b_2layers_all_dataloaders_dict.keys():
+        if dataset_name in wrappers_dict:
+            deit3b_2layers_all_dataloaders_dict[dataset_name] = (
+                deit3b_2layers_all_dataloaders_dict[dataset_name],
+                wrappers_dict[dataset_name]
+            )
 
     return deit3b_2layers_all_dataloaders_dict
 
