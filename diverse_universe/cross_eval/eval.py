@@ -89,8 +89,8 @@ from diverse_universe.local_models.ensemble import (
 # from diverse_universe.local_models.wrappers import (
 #     wrap_model
 # )
-from diverse_universe.train import (
-    METRICS
+from diverse_universe.train.losses import (
+    get_metrics_mapping
 )
 # from diverse_universe.local_models.ensemble import (
 #     make_ensembles_from_paths
@@ -700,7 +700,7 @@ def evaluate_ensembles(
     device=torch.device("cuda:0"),
     feature_extractor=None,
     wrap=None,
-    metrics_mappings=METRICS,
+    metrics_mappings=get_metrics_mapping(),
     prune_metrics=["dis"],
     evaluation_func=None,
     evaluation_kwargs={},
@@ -769,7 +769,7 @@ def evaluate_ensembles_on_dataloaders(
     feature_extractor=None,
     wrap=None,
     verbose=True,
-    metrics_mappings=METRICS,
+    metrics_mappings=get_metrics_mapping(),
     prune_metrics=["dis"],
     previous_results={},
     evaluation_func=None,
@@ -883,7 +883,7 @@ def make_cross_dict(
     wrap=None,
     verbose=True,
     aggregate=True,
-    metrics_mappings=METRICS,
+    metrics_mappings=get_metrics_mapping(),
     prune_metrics=["dis"],
     evaluation_func=None,
     evaluation_kwargs={},
