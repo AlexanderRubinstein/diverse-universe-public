@@ -1,4 +1,5 @@
 # root auxilary folders
+data
 result_pickles
 models
 envs

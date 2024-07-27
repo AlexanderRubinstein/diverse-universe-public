@@ -1,12 +1,193 @@
 params:
   random_seed: 42
 experiment_type: "deit3b_dataloaders"
-eval_type: <placeholder>
-results_save_path: <placeholder>
+# eval_type: "ood_det" # tmp
+eval_type: "ood_gen" # tmp
+results_save_path: "./result_pickles/deit3b_ood_gen_tmp.pkl" # tmp
 logging:
 #   gdrive_storage_folder: "https://drive.google.com/drive/folders/1bCKbgY29CXsgYSwBHk49weolkA5cBePT?usp=share_link"
   use_wandb: False
   use_tb: False
+
+cached_datasets_info:
+    ood_det_keys: [
+        'in_val',
+        # 'imagenet_a',
+        # 'imagenet_r',
+        # 'mixed_rand',
+        # 'mixed_next',
+        # 'cue-conflict',
+        # 'stylized',
+        'iNaturalist',
+        'OpenImages',
+        'brightness_1',
+        'brightness_5',
+        'contrast_1',
+        'contrast_5',
+        'defocus_blur_1',
+        'defocus_blur_5',
+        'elastic_transform_1',
+        'elastic_transform_5',
+        'fog_1',
+        'fog_5',
+        'frost_1',
+        'frost_5',
+        'gaussian_noise_1',
+        'gaussian_noise_5',
+        'glass_blur_1',
+        'glass_blur_5',
+        'impulse_noise_1',
+        'impulse_noise_5',
+        'jpeg_compression_1',
+        'jpeg_compression_5',
+        'motion_blur_1',
+        'motion_blur_5',
+        'pixelate_1',
+        'pixelate_5',
+        'shot_noise_1',
+        'shot_noise_5',
+        'snow_1',
+        'snow_5',
+        'zoom_blur_1',
+        'zoom_blur_5'
+    ]
+    ood_gen_keys: [
+        'in_val',
+        'imagenet_a',
+        'imagenet_r',
+        # 'mixed_rand',
+        # 'mixed_next',
+        # 'cue-conflict',
+        # 'stylized',
+        'iNaturalist',
+        'OpenImages',
+        'brightness_1',
+        'brightness_5',
+        'contrast_1',
+        'contrast_5',
+        'defocus_blur_1',
+        'defocus_blur_5',
+        'elastic_transform_1',
+        'elastic_transform_5',
+        'fog_1',
+        'fog_5',
+        'frost_1',
+        'frost_5',
+        'gaussian_noise_1',
+        'gaussian_noise_5',
+        'glass_blur_1',
+        'glass_blur_5',
+        'impulse_noise_1',
+        'impulse_noise_5',
+        'jpeg_compression_1',
+        'jpeg_compression_5',
+        'motion_blur_1',
+        'motion_blur_5',
+        'pixelate_1',
+        'pixelate_5',
+        'shot_noise_1',
+        'shot_noise_5',
+        'snow_1',
+        'snow_5',
+        'zoom_blur_1',
+        'zoom_blur_5'
+    ]
+    wrappers:
+        imagenet_a: ina
+        imagenet_r: inr
+    path_mapping:
+        # in_val: /mnt/qb/work/oh/arubinstein17/cache/ImageNet1k/val_cache/ed4f10f4ddeb07f1d876_torch_load_block_-1_model_imagenet1k_dataset_1_epochs_50000_samples.hdf5
+        # in_val
+        in_val: /home/oh/arubinstein17/github/diverse-universe-public/data/symlinked/cached_datasets/in_val.hdf5
+        # in_c
+        brightness_1: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/Brightness_1/018761d35314e767e2f8_torch_load_block_-1_model_Brightness_1_dataset_1_epochs_50000_samples.hdf5
+        brightness_5: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/Brightness_5/9859e168af33df835e6b_torch_load_block_-1_model_Brightness_5_dataset_1_epochs_50000_samples.hdf5
+        contrast_1: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/Contrast_1/d2a8d304ed6d3f221838_torch_load_block_-1_model_Contrast_1_dataset_1_epochs_50000_samples.hdf5
+        contrast_5: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/Contrast_5/d43973e32a1238e28860_torch_load_block_-1_model_Contrast_5_dataset_1_epochs_50000_samples.hdf5
+        defocus_blur_1: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/Defocus
+            Blur_1/239f6f9452e1c7f76559_torch_load_block_-1_model_Defocus
+            Blur_1_dataset_1_epochs_50000_samples.hdf5
+        defocus_blur_5: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/Defocus
+            Blur_5/5962654dc65a1075162a_torch_load_block_-1_model_Defocus
+            Blur_5_dataset_1_epochs_50000_samples.hdf5
+        elastic_transform_1: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/Elastic
+            Transform_1/cf257e17bb56988c761a_torch_load_block_-1_model_Elastic
+            Transform_1_dataset_1_epochs_50000_samples.hdf5
+        elastic_transform_5: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/Elastic
+            Transform_5/c0dcdd9e7053a8fb155d_torch_load_block_-1_model_Elastic
+            Transform_5_dataset_1_epochs_50000_samples.hdf5
+        fog_1: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/Fog_1/b0ec7efe04e6fdf21735_torch_load_block_-1_model_Fog_1_dataset_1_epochs_50000_samples.hdf5
+        fog_5: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/Fog_5/71ab4fb2e9b4b1fa57db_torch_load_block_-1_model_Fog_5_dataset_1_epochs_50000_samples.hdf5
+        frost_1: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/Frost_1/39ac82473288986795e3_torch_load_block_-1_model_Frost_1_dataset_1_epochs_50000_samples.hdf5
+        frost_5: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/Frost_5/bcba70de667d6b4457e1_torch_load_block_-1_model_Frost_5_dataset_1_epochs_50000_samples.hdf5
+        gaussian_noise_1: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/Gaussian
+            Noise_1/781d9ade8733ce863125_torch_load_block_-1_model_Gaussian
+            Noise_1_dataset_1_epochs_50000_samples.hdf5
+        gaussian_noise_5: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/Gaussian
+            Noise_5/032df5e880ec15c9bce8_torch_load_block_-1_model_Gaussian
+            Noise_5_dataset_1_epochs_50000_samples.hdf5
+        glass_blur_1: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/Glass
+            Blur_1/8c3d59cc6b34327200df_torch_load_block_-1_model_Glass
+            Blur_1_dataset_1_epochs_50000_samples.hdf5
+        glass_blur_5: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/Glass
+            Blur_5/ba80e5e543b89d887370_torch_load_block_-1_model_Glass
+            Blur_5_dataset_1_epochs_50000_samples.hdf5
+        impulse_noise_1: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/Impulse
+            Noise_1/2fbcd58297434cd8a20f_torch_load_block_-1_model_Impulse
+            Noise_1_dataset_1_epochs_50000_samples.hdf5
+        impulse_noise_5: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/Impulse
+            Noise_5/d7e1fd6eb315694814d3_torch_load_block_-1_model_Impulse
+            Noise_5_dataset_1_epochs_50000_samples.hdf5
+        jpeg_compression_1: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/JPEG
+            Compression_1/88cdf408b5c596bb9775_torch_load_block_-1_model_JPEG
+            Compression_1_dataset_1_epochs_50000_samples.hdf5
+        jpeg_compression_5: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/JPEG
+            Compression_5/b4bfbf0004f39cc46023_torch_load_block_-1_model_JPEG
+            Compression_5_dataset_1_epochs_50000_samples.hdf5
+        motion_blur_1: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/Motion
+            Blur_1/3daf4ea2c4a9d4f746e0_torch_load_block_-1_model_Motion
+            Blur_1_dataset_1_epochs_50000_samples.hdf5
+        motion_blur_5: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/Motion
+            Blur_5/01ee8192c9a5bb9c9a92_torch_load_block_-1_model_Motion
+            Blur_5_dataset_1_epochs_50000_samples.hdf5
+        pixelate_1: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/Pixelate_1/47343cc26894d01dca32_torch_load_block_-1_model_Pixelate_1_dataset_1_epochs_50000_samples.hdf5
+        pixelate_5: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/Pixelate_5/601835402b7e4740a061_torch_load_block_-1_model_Pixelate_5_dataset_1_epochs_50000_samples.hdf5
+        shot_noise_1: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/Shot
+            Noise_1/f957fb1ac377caccf89f_torch_load_block_-1_model_Shot
+            Noise_1_dataset_1_epochs_50000_samples.hdf5
+        shot_noise_5: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/Shot
+            Noise_5/a3792b481bbf1b9ab58d_torch_load_block_-1_model_Shot
+            Noise_5_dataset_1_epochs_50000_samples.hdf5
+        snow_1: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/Snow_1/4f0daa02013581e5be32_torch_load_block_-1_model_Snow_1_dataset_1_epochs_50000_samples.hdf5
+        snow_5: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/Snow_5/391f5ada62b5fe406b6e_torch_load_block_-1_model_Snow_5_dataset_1_epochs_50000_samples.hdf5
+        zoom_blur_1: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/Zoom
+            Blur_1/1be5968ec5b522bdeec0_torch_load_block_-1_model_Zoom
+            Blur_1_dataset_1_epochs_50000_samples.hdf5
+        zoom_blur_5: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/Zoom
+            Blur_5/01bc63f892b87725a11e_torch_load_block_-1_model_Zoom
+            Blur_5_dataset_1_epochs_50000_samples.hdf5
+        # datasets for ood detection
+        iNaturalist: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/iNaturalist/214988c198612f2682e6_torch_load_block_-1_model_iNaturalist_dataset_1_epochs_10000_samples.hdf5
+        OpenImages: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/openimages/816f6e9e7fa686d093e8_torch_load_block_-1_model_openimages_dataset_1_epochs_17632_samples.hdf5
+        # datasets for ood generalization
+        imagenet_a: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/imagenet_a/f37703ce0aea0e55ab2c_torch_load_block_-1_model_imagenet_a_dataset_1_epochs_7500_samples.hdf5
+        imagenet_r: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/imagenet_r/c9fe46d6544688f46907_torch_load_block_-1_model_imagenet_r_dataset_1_epochs_30000_samples.hdf5
+        # mixed_rand: [/mnt/qb/work/oh/arubinstein17/cache/val_datasets/mixed_rand/bf802cc68d4a8b524c38_torch_load_block_-1_model_mixed_rand_dataset_1_epochs_4050_samples.hdf5, "IN9"]
+        # mixed_same: [/mnt/qb/work/oh/arubinstein17/cache/val_datasets/mixed_same/03839176c08efd3bf9e0_torch_load_block_-1_model_mixed_same_dataset_1_epochs_4050_samples.hdf5, "IN9"]
+        # only_bg_t: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/only_bg_t/82c8996731b022fe6a5f_torch_load_block_-1_model_only_bg_t_dataset_1_epochs_4050_samples.hdf5
+        # no_fg: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/no_fg/5cc8e5036cec4c12a397_torch_load_block_-1_model_no_fg_dataset_1_epochs_4050_samples.hdf5
+        # mixed_next: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/mixed_next/0cbfd71928f9d1f69cd2_torch_load_block_-1_model_mixed_next_dataset_1_epochs_4050_samples.hdf5
+        # only_fg: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/only_fg/3de26782660a000fb937_torch_load_block_-1_model_only_fg_dataset_1_epochs_4050_samples.hdf5
+        # original: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/original/d5967a112b317104ccb5_torch_load_block_-1_model_original_dataset_1_epochs_4050_samples.hdf5
+        # only_bg_b: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/only_bg_b/b2005edd362a19e1ae41_torch_load_block_-1_model_only_bg_b_dataset_1_epochs_4050_samples.hdf5
+        # stylized: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/stylized/6a559f1b1becae879c79_torch_load_block_-1_model_stylized_dataset_1_epochs_800_samples.hdf5
+        # sketch: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/sketch/ff0161b6b924453b0c68_torch_load_block_-1_model_sketch_dataset_1_epochs_800_samples.hdf5
+        # edge: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/edge/7f7ea165dfb604e47f3c_torch_load_block_-1_model_edge_dataset_1_epochs_160_samples.hdf5
+        # silhouette: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/silhouette/9def5ec3aecf90d0515c_torch_load_block_-1_model_silhouette_dataset_1_epochs_160_samples.hdf5
+        # cue-conflict: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/cue-conflict/5f1aa995aa7afccf46e8_torch_load_block_-1_model_cue-conflict_dataset_1_epochs_1280_samples.hdf5
+
+    # base_path: "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/"
+    # filename_substring: "torch_load_block_-1_model"
 models:
 
     deit3b_budget_v2_:
