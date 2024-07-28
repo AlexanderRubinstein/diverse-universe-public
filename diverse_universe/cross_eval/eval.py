@@ -5,16 +5,18 @@ import shutil
 # import sklearn
 import sklearn.metrics as skmetrics
 import numpy as np
-import torch.nn.functional as F
+# import torch.nn.functional as F
 from tqdm import tqdm
+# import pandas as pd
+# from IPython.display import display
 from stuned.utility.utils import (
     raise_unknown,
     get_with_assert,
     pretty_json,
     log_or_print,
     append_dict,
-    aggregate_tensors_by_func,
-    apply_pairwise
+    # aggregate_tensors_by_func,
+    # apply_pairwise
     # check_dict,
     # update_dict_by_nested_key,
 )
@@ -48,7 +50,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 #     try_to_log_in_csv
 # )
 from diverse_universe.train.losses import (
-    PER_SAMPLE_METRIC_NAMES,
+    # PER_SAMPLE_METRIC_NAMES,
     div_different_preds,
     div_different_preds_per_sample,
     div_continous_unique_per_sample,
@@ -164,10 +166,10 @@ from diverse_universe.local_datasets.wilds import (
 #     IN_C_DATALOADERS_NAMES,
 #     extract_in_c_paths
 # )
-from diverse_universe.local_datasets.imagenet_c import (
-    IN_C_DATALOADERS_NAMES,
-    extract_in_c_paths
-)
+# from diverse_universe.local_datasets.imagenet_c import (
+#     IN_C_DATALOADERS_NAMES,
+#     extract_in_c_paths
+# )
 sys.path.pop(0)
 
 
@@ -178,6 +180,8 @@ sys.path.pop(0)
 #     f"{os.environ.get('USER')}-{os.environ.get('SLURM_JOB_ID')}",
 # )
 ADJUSTED_GROUPWISE_KEY = "_adjusted"
+# DEFAULT_ROUND = 9
+# HYPERPARAM_PREFIX = "__hyperparam__"
 # IN_VAL_CACHED_2LAYER_PATH = \
 #     "/mnt/qb/work/oh/arubinstein17/cache/ImageNet1k/val_cache/ed4f10f4ddeb07f1d876_torch_load_block_-1_model_imagenet1k_dataset_1_epochs_50000_samples.hdf5"
 
