@@ -346,7 +346,7 @@ def save_activations(
     if custom_prefix is not None:
         model_type_name = f"{custom_prefix}_{model_type_name}"
 
-    if not cache_path_is_dir:
+    if cache_path_is_dir:
         cache_file_path = os.path.join(
             cache_file_path,
             make_hdf5_name(
