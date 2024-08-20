@@ -1,2 +1,2 @@
-path_to_main,path_to_default_config,whether_to_run,delta:kwargs/model,delta:kwargs/layer_cutoff,delta:kwargs/original_dataset_name,delta:kwargs/original_dataset_path,delta:kwargs/cache_save_path
-__RUNNER__,./configs/caching/caching.yaml,0,deit3b,-1,in_train,/mnt/lustre/datasets/ImageNet2012,./data/datasets/in_train_deit3b_-1.pkl
+path_to_main,path_to_default_config,whether_to_run,delta:kwargs/model,delta:kwargs/layer_cutoff,delta:kwargs/original_dataset_name,delta:kwargs/original_dataset_path,delta:kwargs/cache_save_path,delta:kwargs/model_path,delta:kwargs/n_epochs
+__RUNNER__,./configs/caching/caching.yaml,0,deit3b,-1,in_val,/mnt/lustre/datasets/ImageNet2012,./data/datasets/in_train_deit3b_-1.pkl,./models/deit3/deit_3_base_224_21k.pth,1

@@ -50,7 +50,9 @@
                 "--original_dataset_path",
                 "/mnt/lustre/datasets/ImageNet2012",
                 "--cache_save_path",
-                "./data/datasets/in_train_deit3b_-1.pkl"
+                "./data/datasets/in_train_deit3b_-1.pkl",
+                "--n_epochs",
+                "1"
             ]
         },
     ]

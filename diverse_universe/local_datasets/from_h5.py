@@ -338,8 +338,8 @@ def get_h5_dataloaders(
     return train_dataloader, eval_dataloaders
 
 
-# def make_hdf5_name(unique_hash, suffix):
-#     return f"{unique_hash}{SEP}{suffix}.hdf5"
+def make_hdf5_name(unique_hash, suffix):
+    return f"{unique_hash}{SEP}{suffix}.hdf5"
 
 
 def extract_hdf5_hash(hdf5_name):
