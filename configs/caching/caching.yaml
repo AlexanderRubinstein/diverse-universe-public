@@ -1,0 +1,40 @@
+params:
+  random_seed: 42
+is_python: True
+
+exec_path: ./diverse_universe/caching/main.py
+conda_env: ./envs/diverse_universe
+
+kwargs:
+  model: <placeholder>
+  layer_cutoff: <placeholder>
+  original_dataset_name: <placeholder>
+  original_dataset_path: <placeholder>
+  cache_save_path: <placeholder>
+  # "config-file": "/home/oh/arubinstein17/github/densification/src/densifier/get_segments/cropformer_hornet.yaml"
+  # "input": <p>
+  # "output": <p>
+  # "range": <p>
+  # "opts": "MODEL.WEIGHTS /home/oh/arubinstein17/github/densification/models/CropFormer_hornet_3x/CropFormer_model/Entity_Segmentation/CropFormer_hornet_3x/CropFormer_hornet_3x_03823a.pth"
+
+                # "--config-file",
+                # ,
+                # "--input",
+                # // "../../data/CC3M/00000.tar",
+                # // "./data/CounterAnimal/symlinked/counter",
+                # // "/home/oh/arubinstein17/github/densification/data/CounterAnimal/symlinked/common.tar.gz",
+                # // "./data/CounterAnimal/symlinked/counter_9_10.tar.gz",
+                # // "./data/CounterAnimal/symlinked/counter.tar.gz",
+                # "./data/CounterAnimal/symlinked/common.tar.gz",
+                # "--output",
+                # // "./data/masks/counter_masks_1907.pkl",
+                # "./data/masks/common_masks_2907.pkl",
+                # "--opts",
+                # "MODEL.WEIGHTS",
+                # "./models/CropFormer_hornet_3x/CropFormer_model/Entity_Segmentation/CropFormer_hornet_3x/CropFormer_hornet_3x_03823a.pth"
+
+# logging:
+#   gdrive_storage_folder: https://drive.google.com/drive/folders/1bCKbgY29CXsgYSwBHk49weolkA5cBePT?usp=share_link
+#   use_wandb: false
+#   wandb:
+#     netrc_path: ~/.netrc
