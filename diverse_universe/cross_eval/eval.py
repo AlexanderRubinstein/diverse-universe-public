@@ -2,8 +2,8 @@ import os
 import sys
 import torch
 import shutil
-# import sklearn
-import sklearn.metrics as skmetrics
+import sklearn
+# import sklearn.metrics as skmetrics
 import numpy as np
 # import torch.nn.functional as F
 from tqdm import tqdm
@@ -57,7 +57,19 @@ from diverse_universe.train.losses import (
     div_continous_unique,
     div_var,
     get_probs,
-    record_diversity
+    record_diversity,
+    ens_entropy,
+    average_entropy,
+    mutual_information,
+    average_energy,
+    average_max_logit,
+    ens_entropy_per_sample,
+    average_entropy_per_sample,
+    mutual_information_per_sample,
+    average_energy_per_sample,
+    average_max_logit_per_sample,
+    a2d_score,
+    a2d_score_per_sample
     # METRICS,
     # div_ortega,
     # div_mean_logit,
@@ -184,6 +196,23 @@ ADJUSTED_GROUPWISE_KEY = "_adjusted"
 # HYPERPARAM_PREFIX = "__hyperparam__"
 # IN_VAL_CACHED_2LAYER_PATH = \
 #     "/mnt/qb/work/oh/arubinstein17/cache/ImageNet1k/val_cache/ed4f10f4ddeb07f1d876_torch_load_block_-1_model_imagenet1k_dataset_1_epochs_50000_samples.hdf5"
+EXTENDED_METRICS = [
+    tuple(["ens_entropy", ens_entropy]),
+    tuple(["average_entropy", average_entropy]),
+    tuple(["mutual_information", mutual_information]),
+    tuple(["average_energy", average_energy]),
+    tuple(["average_max_logit", average_max_logit]),
+    tuple(["a2d_score", a2d_score])
+]
+EXTENDED_METRICS_PER_SAMPLE = [
+    tuple(["ens_entropy_per_sample", ens_entropy_per_sample]),
+    tuple(["average_entropy_per_sample", average_entropy_per_sample]),
+    tuple(["mutual_information_per_sample", mutual_information_per_sample]),
+    tuple(["average_energy_per_sample", average_energy_per_sample]),
+    tuple(["average_max_logit_per_sample", average_max_logit_per_sample]),
+    tuple(["a2d_score_per_sample", a2d_score_per_sample])
+]
+CONF = "conf"
 
 
 def patch_eval_config(experiment_config):
@@ -225,6 +254,16 @@ def cross_eval(
     if results_save_path is None:
         results_save_path = local_results_save_path
 
+    ood_metric_type = experiment_config.get("ood_metric_type", "default")
+    assert ood_metric_type in [
+        "default",
+        # "minimal",
+        # "rebuttal_extension",
+        # "a2d_score"
+    ]
+
+    metrics_mappings = make_metrics_mappings(eval_type, ood_metric_type)
+
     if eval_type == "ood_gen":
 
         eval_kwargs = {"cook_soup": True}
@@ -240,11 +279,13 @@ def cross_eval(
             feature_extractor=None,
             wrap=None,
             verbose=False,
-            metrics_mappings=[
-                ("div_different_preds", div_different_preds), # TODO(Alex 06.05.2024): specify by config
-                ("div_continous_unique", div_continous_unique),
-                ("var", div_var)
-            ],
+            metrics_mappings=metrics_mappings
+            # [
+            #     ("div_different_preds", div_different_preds), # TODO(Alex 06.05.2024): specify by config
+            #     ("div_continous_unique", div_continous_unique),
+            #     ("var", div_var)
+            # ]
+            ,
             prune_metrics=[],
             evaluation_kwargs=eval_kwargs,
             logger=logger,
@@ -264,10 +305,12 @@ def cross_eval(
             device=torch.device("cuda:0"),
             evaluation_func=evaluate_ood_detection,
             evaluation_kwargs={
-                "metrics_mappings": [
-                    ("div_different_preds_per_sample", div_different_preds_per_sample),
-                    ("div_continous_unique_per_sample", div_continous_unique_per_sample)
-                ],
+                "metrics_mappings": metrics_mappings
+                # [
+                #     ("div_different_preds_per_sample", div_different_preds_per_sample),
+                #     ("div_continous_unique_per_sample", div_continous_unique_per_sample)
+                # ]
+                ,
                 "cache": {},
                 "id_dataloader": id_dataloader # TODO(Alex | 06.05.2024): specify by config
             },
@@ -283,6 +326,7 @@ def cross_eval(
 
 
 def prepare_models(models_config):
+    check_for_duplicates(models_config)
     models_dict = {}
     model_to_prop_dict = {}
     for model_group_config in models_config.values():
@@ -679,59 +723,169 @@ def joint_res(res_1, res_2, key):
 
 
 # TODO(Alex | 23.07.2024): Make it more efficient and less embarrasing
-def compute_roc_auc(detailed_res_id, detailed_res_ood, verbose=True):
+# def compute_roc_auc(detailed_res_id, detailed_res_ood, verbose=True):
 
-    labels_div, divs = joint_res(
+#     labels_div, divs = joint_res(
+#         detailed_res_id,
+#         detailed_res_ood, # class 1 has higher div
+#         'div_different_preds_per_sample'
+#     )
+
+#     labels_cont_uniq, cont_uniq = joint_res(
+#         detailed_res_id,
+#         detailed_res_ood, # class 1 has higher div
+#         'div_continous_unique_per_sample'
+#     )
+
+#     labels_conf, confs = joint_res(
+#         detailed_res_ood["ensemble"],
+#         detailed_res_id["ensemble"], # class 1 has higher conf
+#         'conf'
+#     )
+
+#     # labels_conf_sm, confs_sm = joint_res(
+#     #     ce_a2d_detailed_res_sm["ensemble"],
+#     #     ce_a2d_detailed_res_in_val_sm["ensemble"], # class 1 has higher conf
+#     #     'conf'
+#     # )
+
+#     labels_conf_0, confs_0 = joint_res(
+#         detailed_res_ood["submodel_0"],
+#         detailed_res_id["submodel_0"], # class 1 has higher conf
+#         'conf'
+#     )
+
+#     # roc_auc_conf = sklearn.metrics.roc_auc_score(labels_conf, confs)
+#     # # roc_auc_conf_sm = sklearn.metrics.roc_auc_score(labels_conf_sm, confs_sm)
+#     # roc_auc_conf_0 = sklearn.metrics.roc_auc_score(labels_conf_0, confs_0)
+#     # roc_auc_divs = sklearn.metrics.roc_auc_score(labels_div, divs)
+#     # roc_auc_cont_uniq = sklearn.metrics.roc_auc_score(labels_cont_uniq, cont_uniq)
+#     roc_auc_conf = skmetrics.roc_auc_score(labels_conf, confs)
+#     # roc_auc_conf_sm = sklearn.metrics.roc_auc_score(labels_conf_sm, confs_sm)
+#     roc_auc_conf_0 = skmetrics.roc_auc_score(labels_conf_0, confs_0)
+#     roc_auc_divs = skmetrics.roc_auc_score(labels_div, divs)
+#     roc_auc_cont_uniq = skmetrics.roc_auc_score(labels_cont_uniq, cont_uniq)
+
+
+#     ##########
+#     # TODO(Alex | 28.03.2024): remove duplication above and do it in a loop
+
+#     res = {
+#         "ensemble": roc_auc_conf,
+#         "submodel_0": roc_auc_conf_0,
+#         "divs": roc_auc_divs,
+#         "cont_unique": roc_auc_cont_uniq
+#     }
+
+#     if verbose:
+#         for metric_name, metric_value in res.items():
+#             print(metric_name, metric_value)
+
+#     return res
+
+
+def compute_roc_auc(detailed_res_id, detailed_res_ood, metrics_mappings, verbose=True):
+
+    def get_roc_auc_for_metric(
         detailed_res_id,
-        detailed_res_ood, # class 1 has higher div
-        'div_different_preds_per_sample'
-    )
+        detailed_res_ood,
+        metric_name,
+        reverse
+    ):
+        if reverse:
+            labels, metric_values = joint_res(
+                detailed_res_ood,
+                detailed_res_id, # id has higher metric
+                metric_name
+            )
+        else:
+            labels, metric_values = joint_res(
+                detailed_res_id,
+                detailed_res_ood, # ood has higher metric
+                metric_name
+            )
+        roc_auc = sklearn.metrics.roc_auc_score(labels, metric_values)
+        return roc_auc
 
-    labels_cont_uniq, cont_uniq = joint_res(
-        detailed_res_id,
-        detailed_res_ood, # class 1 has higher div
-        'div_continous_unique_per_sample'
-    )
+    def add_derivable_score(detailed_res):
 
-    labels_conf, confs = joint_res(
-        detailed_res_ood["ensemble"],
-        detailed_res_id["ensemble"], # class 1 has higher conf
-        'conf'
-    )
+        def invert_scores(scores):
+            return [1 - score for score in scores]
 
-    # labels_conf_sm, confs_sm = joint_res(
-    #     ce_a2d_detailed_res_sm["ensemble"],
-    #     ce_a2d_detailed_res_in_val_sm["ensemble"], # class 1 has higher conf
-    #     'conf'
-    # )
+        extension_dict = {}
+        submodel_confs = []
+        for key, value in detailed_res.items():
+            if "ensemble" in key:
+                extension_dict[key + "_" + CONF] = value[CONF]
+            elif "submodel" in key:
+                submodel_confs.append(value[CONF])
+            elif (
+                    "mutual_information_per_sample" in key
+                or
+                    "average_max_logit_per_sample" in key
+            ):
+                extension_dict["inv_" + key] = invert_scores(value)
 
-    labels_conf_0, confs_0 = joint_res(
-        detailed_res_ood["submodel_0"],
-        detailed_res_id["submodel_0"], # class 1 has higher conf
-        'conf'
-    )
+        if len(submodel_confs) > 0:
+            extension_dict["mean_submodel_" + CONF] \
+                = np.mean(np.array(submodel_confs), axis=0)
 
-    # roc_auc_conf = sklearn.metrics.roc_auc_score(labels_conf, confs)
-    # # roc_auc_conf_sm = sklearn.metrics.roc_auc_score(labels_conf_sm, confs_sm)
-    # roc_auc_conf_0 = sklearn.metrics.roc_auc_score(labels_conf_0, confs_0)
-    # roc_auc_divs = sklearn.metrics.roc_auc_score(labels_div, divs)
-    # roc_auc_cont_uniq = sklearn.metrics.roc_auc_score(labels_cont_uniq, cont_uniq)
-    roc_auc_conf = skmetrics.roc_auc_score(labels_conf, confs)
-    # roc_auc_conf_sm = sklearn.metrics.roc_auc_score(labels_conf_sm, confs_sm)
-    roc_auc_conf_0 = skmetrics.roc_auc_score(labels_conf_0, confs_0)
-    roc_auc_divs = skmetrics.roc_auc_score(labels_div, divs)
-    roc_auc_cont_uniq = skmetrics.roc_auc_score(labels_cont_uniq, cont_uniq)
+        return detailed_res | extension_dict
 
+    detailed_res_id = add_derivable_score(detailed_res_id)
+    detailed_res_ood = add_derivable_score(detailed_res_ood)
 
-    ##########
-    # TODO(Alex | 28.03.2024): remove duplication above and do it in a loop
+    metric_names = [
+        "ensemble_" + CONF,
+        "mean_submodel_" + CONF,
+        # 'div_different_preds_per_sample',
+        # 'div_continous_unique_per_sample',
+        # "ens_entropy_per_sample",
+        # "average_entropy_per_sample",
+        # "mutual_information_per_sample",
+        # "average_energy_per_sample",
+        # "average_max_logit_per_sample",
+        # "inv_average_max_logit_per_sample",
+        # "inv_mutual_information_per_sample",
+    ] + [name for name, _ in metrics_mappings]
 
-    res = {
-        "ensemble": roc_auc_conf,
-        "submodel_0": roc_auc_conf_0,
-        "divs": roc_auc_divs,
-        "cont_unique": roc_auc_cont_uniq
-    }
+    if "mutual_information_per_sample" in metric_names:
+        metric_names.append("inv_mutual_information_per_sample")
+
+    if "average_max_logit_per_sample" in metric_names:
+        metric_names.append("inv_average_max_logit_per_sample")
+
+    res = {}
+    # for metric_name in [
+    #     "ensemble_" + CONF,
+    #     "mean_submodel_" + CONF,
+    #     # 'div_different_preds_per_sample',
+    #     # 'div_continous_unique_per_sample',
+    #     # "ens_entropy_per_sample",
+    #     # "average_entropy_per_sample",
+    #     # "mutual_information_per_sample",
+    #     # "average_energy_per_sample",
+    #     # "average_max_logit_per_sample",
+    #     # "inv_average_max_logit_per_sample",
+    #     # "inv_mutual_information_per_sample",
+    # ] + metrics_mappings:
+    for metric_name in metric_names:
+        if (
+                "conf" in metric_name
+            or
+                "average_max_logit_per_sample" in metric_name
+            or
+                "mutual_information_per_sample" in metric_name
+        ):
+            reverse = True
+        else:
+            reverse = False
+        res[metric_name] = get_roc_auc_for_metric(
+            detailed_res_id,
+            detailed_res_ood,
+            metric_name,
+            reverse=reverse
+        )
 
     if verbose:
         for metric_name, metric_value in res.items():
@@ -971,6 +1125,33 @@ def aggregate_by_ensemble(eval_data):
         res[dataloader_name] = aggregate_dicts(list(ensemble_evals.values()))
     return res
 
+
+def check_for_duplicates(models_config):
+    found_model_prefixes = set()
+    expected_num_groups = None
+    num_groups = len(models_config)
+    for key, value in models_config.items():
+        if key == "total_groups":
+            expected_num_groups = value
+            num_groups -= 1
+            continue
+        model_group_prefix = get_with_assert(
+            value,
+            "model_group_prefix"
+        )
+        if model_group_prefix in found_model_prefixes:
+            raise Exception(
+                f"Duplicates in model prefixes: {model_group_prefix}"
+            )
+        else:
+            found_model_prefixes.add(model_group_prefix)
+
+    if expected_num_groups is not None:
+        assert num_groups == expected_num_groups, \
+            "Number of model groups is not equal to expected, " \
+            "possibly due to duplicates"
+
+
 # TODO(Alex | 28.03.2024): Move all eval args inside evaluation_kwargs
 def make_cross_dict(
     models_dict,
@@ -987,16 +1168,19 @@ def make_cross_dict(
     evaluation_kwargs={},
     save_after_each_model=True,
     logger=None,
-    model_to_prop_dict=None
+    model_to_prop_dict=None,
+    results_key=None,
+    recompute_all=False
 ):
 
-    if os.path.exists(save_path):
+    if not recompute_all and os.path.exists(save_path):
         log_or_print(
             f"Loading existing results from {save_path}",
             logger,
             auto_newline=True
         )
-        res = torch.load(save_path)
+        res = extract_from_pkl(save_path, results_key, assert_non_empty=False)
+        # res = torch.load(save_path)??
     else:
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
         res = {}
@@ -1048,7 +1232,8 @@ def make_cross_dict(
         res[model_name] |= eval_res
         res[model_name] |= model_to_prop_dict[model_name]
         if save_after_each_model:
-            torch.save(res, save_path)
+            # torch.save(res, save_path)??
+            save_to_pkl(res, save_path, results_key)
 
     if verbose:
         log_or_print(
@@ -1056,8 +1241,32 @@ def make_cross_dict(
             logger,
             auto_newline=True
         )
-    torch.save(res, save_path)
+    # torch.save(res, save_path)??
+    save_to_pkl(res, save_path, results_key)
     return res
+
+
+def extract_from_pkl(path, key=None, assert_non_empty=True):
+    assert os.path.exists(path)
+    res = torch.load(path)
+    if key is not None:
+        # res = res[key]
+        if assert_non_empty:
+            assert key in res, f"{key} not found in {res}"
+        res = res.get(key, {})
+    if assert_non_empty:
+        assert len(res) > 0
+    return res
+
+
+def save_to_pkl(data, path, key=None):
+    pkl_storage = torch.load(path) if os.path.exists(path) else {}
+    if key is not None:
+        # data = {key: data}
+        pkl_storage[key] = data
+    else:
+        pkl_storage = data
+    torch.save(pkl_storage, path)
 
 
 def evaluate_ensemble(
@@ -1533,3 +1742,38 @@ def evaluate_model(
         return res, detailed_results
 
     return res
+
+
+def make_metrics_mappings(eval_type, ood_metric_type):
+
+    if eval_type == "ood_gen":
+
+        metrics_mappings = [
+            ("div_different_preds", div_different_preds), # TODO(Alex 06.05.2024): specify by config
+            ("div_continous_unique", div_continous_unique),
+            ("var", div_var),
+        ]
+
+        metrics_mappings += EXTENDED_METRICS
+        # if ood_metric_type == "rebuttal_extension":
+        #     metrics_mappings += REBUTTAL_METRICS
+        # elif ood_metric_type == "a2d_score":
+        #     metrics_mappings += [
+        #         ("a2d_score", a2d_score)
+        #     ]
+
+    else:
+        assert eval_type == "ood_det"
+        metrics_mappings = [
+            ("div_different_preds_per_sample", div_different_preds_per_sample),
+            ("div_continous_unique_per_sample", div_continous_unique_per_sample)
+        ]
+        # if ood_metric_type == "rebuttal_extension":
+        #     metrics_mappings += REBUTTAL_METRICS_PER_SAMPLE
+        # elif ood_metric_type == "a2d_score":
+        #     metrics_mappings += [
+        #         ("a2d_score_per_sample", a2d_score_per_sample)
+        #     ]
+        metrics_mappings += EXTENDED_METRICS_PER_SAMPLE
+
+    return metrics_mappings

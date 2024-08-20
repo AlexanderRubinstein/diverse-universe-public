@@ -588,12 +588,28 @@ def make_hdf5_dataloader_from_path(
     return val_dataloaders[split_name]
 
 
-def make_cached_dataloaders(dataloaders_dict, batch_size=32):
+# def make_cached_dataloaders(dataloaders_dict, batch_size=32):
+#     dataloaders = {}
+#     for name, path in dataloaders_dict.items():
+#         dataloaders[name] = make_hdf5_dataloader_from_path(
+#             path,
+#             eval_batch_size=batch_size,
+#             num_workers=0  # should be 0 for hdf5
+#         )
+#     return dataloaders
+
+
+def make_cached_dataloaders(
+    dataloaders_dict,
+    batch_size=32,
+    max_chunk_size=MAX_CHUNK_SIZE
+):
     dataloaders = {}
     for name, path in dataloaders_dict.items():
         dataloaders[name] = make_hdf5_dataloader_from_path(
             path,
             eval_batch_size=batch_size,
+            max_chunk_size=max_chunk_size,
             num_workers=0  # should be 0 for hdf5
         )
     return dataloaders

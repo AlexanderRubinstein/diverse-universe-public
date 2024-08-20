@@ -79,11 +79,47 @@ LOSS_STATISTICS_NAME = "loss"
 DIVDIS_LOSS_KEY = "divdis"
 LAMBDA_KEY = "lambda"
 EPS = 1e-9
+# PER_SAMPLE_METRIC_NAMES = [
+#     "div_different_preds_per_sample",
+#     "div_continous_unique_per_sample"
+# ]
+MAX_MODELS_WITHOUT_OOM = 5
+
+
 PER_SAMPLE_METRIC_NAMES = [
     "div_different_preds_per_sample",
-    "div_continous_unique_per_sample"
+    "div_continous_unique_per_sample",
+    "ens_entropy_per_sample",
+    "average_entropy_per_sample",
+    "mutual_information_per_sample",
+    "average_energy_per_sample",
+    "average_max_logit_per_sample",
+    "a2d_score_per_sample",
+    "similarity_between_models_per_sample",
+    "unreduced_entropy_per_sample"
 ]
-MAX_MODELS_WITHOUT_OOM = 5
+
+
+STACKED_INPUTS_METRIC_NAMES = [
+    "var",
+    "std",
+    "dis",
+    "max_var",
+    "div_different_preds",
+    "div_mean_logits",
+    "div_max_logit",
+    "div_entropy",
+    "div_max_prob",
+    "div_mean_prob",
+    "div_different_preds_per_model",
+    "div_continous_unique",
+    "ens_entropy",
+    "average_entropy",
+    "mutual_information",
+    "average_energy",
+    "average_max_logit",
+    "a2d_score"
+]
 
 
 # class DiverseGradientsLoss(torch.nn.Module):
@@ -1098,6 +1134,141 @@ from einops import rearrange
 #     return logits.max(-1).values.mean()
 
 
+# adapted from: https://github.com/Guoxoug/ens-div-ood-detect/blob/fd52391cb10023d9648b1bd7947530dc48e860a2/utils/eval_utils.py#L117
+
+def entropy(probs: torch.Tensor, dim=-1):
+    "Calcuate the entropy of a categorical probability distribution."
+    log_probs = probs.log()
+    ent = (-probs*log_probs).sum(dim=dim)
+    return ent
+
+
+def ens_entropy_per_sample(logits, models_dim=0):
+    probs = get_probs(logits)
+    av_probs = probs.mean(dim=models_dim)
+    ent = entropy(av_probs)
+    return ent
+
+
+def ens_entropy(logits, models_dim=0):
+    return ens_entropy_per_sample(logits, models_dim=models_dim).mean()
+
+
+def pairwise_distances(stacked_vectors, p=2):
+    distances = torch.cdist(stacked_vectors, stacked_vectors, p=p)
+
+    # Step 2: Calculate the average pairwise distance
+    # We only need the upper triangle of the matrix (excluding the diagonal) to avoid duplicate distances
+    # and to exclude the distance of vectors with themselves (which is zero)
+    # triu_indices = torch.triu_indices(distances.shape[0], distances.shape[1], offset=1)
+    # pairwise_distances = distances[triu_indices[0], triu_indices[1]]
+
+    # Compute the mean of these distances
+    average_distance = distances.mean((-1, -2))
+    return average_distance
+
+
+def similarity_between_models_per_sample(logits):
+
+    probs = get_probs(logits)
+    probs_batch_first = probs.transpose(0, 1)
+    similarity = pairwise_distances(probs_batch_first)
+    return similarity
+
+
+def unreduced_entropy_per_sample(logits):
+    return average_entropy_per_sample(logits, models_dim=None).transpose(0, 1)
+
+
+def average_entropy_per_sample(logits, models_dim=0):
+    probs = get_probs(logits)
+    # av_probs = probs.mean(dim=1)
+    # ent = entropy(av_probs)
+    # conf = av_probs.max(dim=-1).values
+
+    av_ent = entropy(probs, dim=-1)
+    # average over ensemble dim
+    if models_dim is not None:
+        av_ent = av_ent.mean(dim=models_dim)
+
+    return av_ent
+
+
+def average_entropy(logits, models_dim=0):
+    return average_entropy_per_sample(logits, models_dim=models_dim).mean()
+
+
+def mutual_information_per_sample(logits, models_dim=0):
+    probs = get_probs(logits)
+    av_probs = probs.mean(dim=models_dim)
+    ent = entropy(av_probs)
+    # conf = av_probs.max(dim=-1).values
+    # ent =
+
+    av_ent = average_entropy(logits)
+
+    # average over ensemble dim
+    # av_ent = entropy(probs, dim=-1).mean(dim=1)
+    mutual_information = ent - av_ent
+    return mutual_information
+
+
+def a2d_score(logits):
+    return a2d_score_per_sample(logits).mean()
+
+
+# input shape: [n_models, batch_size, num_classes]
+def a2d_score_per_sample(logits):
+    probs = get_probs(logits)
+    # m_idx = torch.randint(0, probs.shape[0], (1,)).item()
+    total_score = None
+
+    # for symmetricity treat each model as p2
+    for m_idx in range(probs.shape[0]):
+        a2d_loss = a2d_loss_impl(
+            probs,
+            m_idx,
+            dbat_loss_type='v1',
+            reduction='none'
+        )
+        inv_a2d_loss = -a2d_loss
+        if total_score is None:
+            total_score = inv_a2d_loss.unsqueeze(0)
+        else:
+            total_score = torch.cat([total_score, inv_a2d_loss.unsqueeze(0)], dim=0)
+
+    return total_score.mean(0)
+    # return a2d_loss_impl(probs, m_idx, dbat_loss_type='v1', reduction='mean')
+
+
+def mutual_information(logits):
+    return mutual_information_per_sample(logits).mean()
+
+
+def average_energy_per_sample(logits, models_dim=0):
+    return -torch.logsumexp(logits, dim=-1).mean(dim=models_dim)
+
+
+def average_energy(logits, models_dim=0):
+    return average_energy_per_sample(logits, models_dim=models_dim).mean()
+
+
+def average_max_logit_per_sample(logits, models_dim=0):
+    return -(logits.max(dim=-1).values.mean(dim=models_dim))
+
+
+def average_max_logit(logits, models_dim=0):
+    return average_max_logit_per_sample(logits, models_dim=models_dim).mean()
+
+
+def conf(logits, models_dim=0):
+    probs = logits.softmax(dim=-1)
+    av_probs = probs.mean(dim=models_dim)
+    # ent = entropy(av_probs)
+    conf = av_probs.max(dim=-1).values
+    return conf.mean()
+
+
 def div_different_preds(logits):
 
     return div_different_preds_per_sample(logits).mean()
@@ -1597,20 +1768,7 @@ def record_diversity(
         elif metric_name == "div_ortega":
             assert labels is not None
             value = compute_metric(stacked_outputs, labels).item()
-        elif metric_name in [
-            "var",
-            "std",
-            "dis",
-            "max_var",
-            "div_different_preds",
-            "div_mean_logits",
-            "div_max_logit",
-            "div_entropy",
-            "div_max_prob",
-            "div_mean_prob",
-            "div_different_preds_per_model",
-            "div_continous_unique"
-        ]:
+        elif metric_name in STACKED_INPUTS_METRIC_NAMES:
             value = compute_metric(stacked_outputs).item()
         else:
             value = aggregate_tensors_by_func(
