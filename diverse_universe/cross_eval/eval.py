@@ -329,7 +329,11 @@ def prepare_models(models_config):
     check_for_duplicates(models_config)
     models_dict = {}
     model_to_prop_dict = {}
-    for model_group_config in models_config.values():
+    # for model_group_config in models_config.values():
+    for model_group_key, model_group_config in models_config.items():
+        if not isinstance(model_group_config, dict):
+            assert model_group_key == "total_groups"
+            continue
         model_group_dict, model_to_prop_group_dict = \
             prepare_model_group(model_group_config)
         models_dict |= model_group_dict
