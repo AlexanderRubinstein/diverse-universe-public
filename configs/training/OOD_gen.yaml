@@ -59,9 +59,9 @@ params:
         disagree_after_epoch: 0
         # disagree_below_threshold: null
         # gamma: <placeholder>
-        lambda: null
+        lambda: 0.5
         loss_type: a2d
-        manual_lambda: <placeholder>
+        manual_lambda: 0.0
         modifier: budget
         task_loss:
           type: xce
@@ -88,8 +88,8 @@ params:
       type: adamW
     reset_epochs: true
   use_gpu: true
-patch:
-  diversity_lambda: <placeholder>
+# patch:
+#   diversity_lambda: <placeholder>
 statistics:
   batchwise: false
   keep_modelwise: false

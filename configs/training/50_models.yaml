@@ -102,8 +102,8 @@ params:
             type: sgd
         reset_epochs: true
     use_gpu: true
-patch:
-    diversity_lambda: 0.5
+# patch:
+#     diversity_lambda: 0.5
 statistics:
     batchwise: false
     keep_modelwise: false
