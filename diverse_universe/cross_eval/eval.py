@@ -946,6 +946,7 @@ def evaluate_ood_detection(
     return compute_roc_auc(
         model_detailed_res_id,
         model_detailed_res_ood,
+        metrics_mappings,
         verbose=False
     )
 
