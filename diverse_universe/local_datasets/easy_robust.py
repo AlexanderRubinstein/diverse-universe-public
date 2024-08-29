@@ -11,9 +11,14 @@ from stuned.utility.utils import (
     get_project_root_path,
     get_with_assert,
     # NAME_NUMBER_SEPARATOR,
-    # raise_unknown,
+    raise_unknown,
+    # runcmd
+    run_cmd_through_popen
     # get_hash,
     # parse_name_and_number
+)
+from stuned.local_datasets.transforms import (
+    make_default_test_transforms_imagenet
 )
 
 
@@ -45,6 +50,9 @@ sys.path.pop(0)
 
 INA_FINGERPRINT = 76
 INR_FINGERPRINT = 103
+BASE_EASY_ROBUST_URL = "http://alisec-competition.oss-cn-shanghai.aliyuncs.com/xiaofeng/easy_robust/benchmark_datasets/"
+IN_A_URL = BASE_EASY_ROBUST_URL + "imagenet-a.tar.gz"
+IN_R_URL = BASE_EASY_ROBUST_URL + "imagenet-r.tar.gz"
 
 
 # IN_C_DATALOADERS_NAMES = {
@@ -67,85 +75,85 @@ INR_FINGERPRINT = 103
 # IN_C_MAX_SEVERITY = 5
 
 
-# def get_easy_robust_dataloaders(
-#     train_batch_size,
-#     eval_batch_size,
-#     easy_robust_config,
-#     num_workers,
-#     eval_transform,
-#     logger
-# ):
-#     dataset_types = get_with_assert(easy_robust_config, "dataset_types")
+def get_easy_robust_dataloaders(
+    train_batch_size,
+    eval_batch_size,
+    easy_robust_config,
+    num_workers,
+    eval_transform,
+    logger
+):
+    dataset_types = get_with_assert(easy_robust_config, "dataset_types")
 
-#     val_dataloaders = {}
+    val_dataloaders = {}
 
-#     if eval_transform is None:
-#         eval_transform = make_default_test_transforms_imagenet()
+    if eval_transform is None:
+        eval_transform = make_default_test_transforms_imagenet()
 
-#     for dataset_type in dataset_types:
-#         assert dataset_type not in val_dataloaders, "Duplicate dataset type"
-#         if dataset_type in ["imagenet_a", "imagenet_r", "imagenet_v2"]:
-#             val_dataloaders[dataset_type] = get_imagenet_arv2_dataloader(
-#                 train_batch_size=train_batch_size,
-#                 eval_batch_size=eval_batch_size,
-#                 easyrobust_config=easy_robust_config,
-#                 num_workers=num_workers,
-#                 eval_transform=eval_transform,
-#                 logger=logger,
-#                 dataset_type=dataset_type
-#             )
-#         elif dataset_type == "imagenet_hard":
-#             val_dataloaders[dataset_type] = get_imagenet_hard_dataloader(
-#                 train_batch_size=train_batch_size,
-#                 eval_batch_size=eval_batch_size,
-#                 easyrobust_config=easy_robust_config,
-#                 num_workers=num_workers,
-#                 eval_transform=eval_transform,
-#                 logger=logger
-#             )
-#         elif dataset_type == "imagenet_c":
-#             val_dataloaders |= get_imagenet_c_dataloader(
-#                 train_batch_size,
-#                 eval_batch_size,
-#                 easy_robust_config,
-#                 num_workers,
-#                 eval_transform,
-#                 logger
-#             )
-#         elif dataset_type == "openimages":
-#             val_dataloaders[dataset_type] = get_openimages_dataloader(
-#                 train_batch_size,
-#                 eval_batch_size,
-#                 easy_robust_config,
-#                 num_workers,
-#                 eval_transform,
-#                 logger
-#             )
-#         elif dataset_type == "from_folder":
-#             val_dataloaders |= get_from_folder_dataloader(
-#                 train_batch_size,
-#                 eval_batch_size,
-#                 easy_robust_config,
-#                 num_workers,
-#                 eval_transform,
-#                 logger
-#             )
-#         elif dataset_type == "imagenet_d":
-#             val_dataloaders |= get_imagenet_d_dataloaders(
-#                 train_batch_size,
-#                 eval_batch_size,
-#                 easy_robust_config,
-#                 num_workers,
-#                 eval_transform,
-#                 logger
-#             )
-#         else:
-#             raise_unknown(
-#                 "dataset type",
-#                 dataset_type,
-#                 "easy_robust_config"
-#             )
-#     return None, val_dataloaders
+    for dataset_type in dataset_types:
+        assert dataset_type not in val_dataloaders, "Duplicate dataset type"
+        if dataset_type in ["imagenet_a", "imagenet_r", "imagenet_v2"]:
+            val_dataloaders[dataset_type] = get_imagenet_arv2_dataloader(
+                train_batch_size=train_batch_size,
+                eval_batch_size=eval_batch_size,
+                easyrobust_config=easy_robust_config,
+                num_workers=num_workers,
+                eval_transform=eval_transform,
+                logger=logger,
+                dataset_type=dataset_type
+            )
+        # elif dataset_type == "imagenet_hard":
+        #     val_dataloaders[dataset_type] = get_imagenet_hard_dataloader(
+        #         train_batch_size=train_batch_size,
+        #         eval_batch_size=eval_batch_size,
+        #         easyrobust_config=easy_robust_config,
+        #         num_workers=num_workers,
+        #         eval_transform=eval_transform,
+        #         logger=logger
+        #     )
+        # elif dataset_type == "imagenet_c":
+        #     val_dataloaders |= get_imagenet_c_dataloader(
+        #         train_batch_size,
+        #         eval_batch_size,
+        #         easy_robust_config,
+        #         num_workers,
+        #         eval_transform,
+        #         logger
+        #     )
+        # elif dataset_type == "openimages":
+        #     val_dataloaders[dataset_type] = get_openimages_dataloader(
+        #         train_batch_size,
+        #         eval_batch_size,
+        #         easy_robust_config,
+        #         num_workers,
+        #         eval_transform,
+        #         logger
+        #     )
+        # elif dataset_type == "from_folder":
+        #     val_dataloaders |= get_from_folder_dataloader(
+        #         train_batch_size,
+        #         eval_batch_size,
+        #         easy_robust_config,
+        #         num_workers,
+        #         eval_transform,
+        #         logger
+        #     )
+        # elif dataset_type == "imagenet_d":
+        #     val_dataloaders |= get_imagenet_d_dataloaders(
+        #         train_batch_size,
+        #         eval_batch_size,
+        #         easy_robust_config,
+        #         num_workers,
+        #         eval_transform,
+        #         logger
+        #     )
+        else:
+            raise_unknown(
+                "dataset type",
+                dataset_type,
+                "easy_robust_config"
+            )
+    return None, val_dataloaders
 
 
 # based on: https://github.com/alibaba/easyrobust/blob/main/easyrobust/benchmarks/ood/imagenet_a.py#L12
@@ -187,6 +195,44 @@ def get_imagenet_arv2_dataloader(
         pin_memory=True,
         drop_last=False
     )
+
+
+def make_download_cmd(name, path, url):
+    return (
+        f"export FOLDER={path} "
+        f"&& mkdir -p $FOLDER "
+        f"&& export FILE=$FOLDER/{name}.tar.gz "
+        f"&& wget {url} -O $FILE && tar -zxf $FILE -C $FOLDER "
+        f"&& rm $FOLDER/{name}.tar.gz"
+    )
+
+
+def download_in_a(path):
+    #         runcmd(
+#             f"cd {data_path} && rm {archive_path}",
+#             verbose=True,
+#             logger=logger
+#         )
+# run_cmd_through_popen(cmd_to_run, logger)
+    run_cmd_through_popen(
+        make_download_cmd("imagenet-a", path, IN_A_URL),
+        # verbose=True,
+        logger=None
+    )
+    # os.sytem(
+    #     make_download_cmd("imagenet-a", path, IN_A_URL)
+    # )
+
+
+def download_in_r(path):
+    run_cmd_through_popen(
+        make_download_cmd("imagenet-r", path, IN_R_URL),
+        # verbose=True,
+        logger=None
+    )
+    # os.sytem(
+    #     make_download_cmd("imagenet-r", path, IN_R_URL)
+    # )
 
 
 # def collate_fn_hard(batch):

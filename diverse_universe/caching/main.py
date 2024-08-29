@@ -16,7 +16,8 @@ from stuned.utility.utils import (
     get_hash,
     get_with_assert,
     remove_file_or_folder,
-    apply_random_seed
+    apply_random_seed,
+    runcmd
     # parse_list_from_string
 )
 
@@ -37,6 +38,13 @@ from diverse_universe.local_datasets.from_h5 import (
     make_hdf5_name,
     extract_hdf5_hash
 )
+from diverse_universe.local_datasets.easy_robust import (
+    download_in_a,
+    download_in_r,
+    # get_imagenet_arv2_dataloader
+    get_easy_robust_dataloaders
+)
+
 sys.path.pop(0)
 
 
@@ -130,9 +138,49 @@ def get_parser():
     # pickle.dump(output, open(args.output, 'wb'))
 
 
+def make_in_ar_dataloader(name, path, batch_size=128, num_workers=4):
+
+    if name == "in_a":
+        dataset_type = "imagenet_a"
+        download_func = download_in_a
+    else:
+        assert name == "in_r"
+        dataset_type = "imagenet_r"
+        download_func = download_in_r
+
+    expected_path = os.path.join(path, dataset_type)
+    if not os.path.exists(expected_path) or len(os.listdir(expected_path)) == 0:
+        os.makedirs(path, exist_ok=True)
+        download_func(path)
+
+    imagenet_a_config = {
+        "type": "easy_robust",
+        'easy_robust': {
+            "dataset_types": [dataset_type],
+            # "data_dir": "./tmp/imagenet-a.tar.gz"
+            # "data_dir": "/mnt/lustre/work/oh/arubinstein17/cache/imagenet-a"
+            "data_dir": path
+        }
+    }
+
+    # _, easy_robust_dataloaders, _ = make_dataloaders( ??
+    _, easy_robust_dataloaders, _ = get_easy_robust_dataloaders(
+        train_batch_size=0,
+        eval_batch_size=batch_size,
+        easy_robust_config=imagenet_a_config,
+        num_workers=num_workers,
+        eval_transform=None,
+        logger=None
+    )
+    imagenet_a_dataloader = easy_robust_dataloaders[dataset_type]
+    return imagenet_a_dataloader
+
+
 def prepare_dataloaders(name, path):
     if name in ["in_train", "in_val"]:
         return make_in_dataloaders(name, path)
+    if name == "in_a":
+        return make_in_ar_dataloader(name, path)
     else:
         raise_unknown(name, "dataset name", "prepare_dataloaders")
 
@@ -281,7 +329,7 @@ def save_activations(
     wrap=None,
     block_id=None,
     custom_prefix=None,
-    cache_path_is_dir=True
+    use_path_as_is=False
 ):
 
     if isinstance(dataset_config, dict):
@@ -346,7 +394,7 @@ def save_activations(
     if custom_prefix is not None:
         model_type_name = f"{custom_prefix}_{model_type_name}"
 
-    if cache_path_is_dir:
+    if not use_path_as_is:
         cache_file_path = os.path.join(
             cache_file_path,
             make_hdf5_name(
@@ -479,11 +527,14 @@ def cache_dataloaders(
     block_id=None,
     collate_fn=None,
     custom_prefix=None,
-    cache_path_is_dir=True
+    use_path_as_is=False
 ):
     res = {}
     for dataloader_name, dataloader in dataloaders_dict.items():
-        cur_cache_path = os.path.join(cache_path, dataloader_name)
+        if use_path_as_is:
+            cur_cache_path = cache_path
+        else:
+            cur_cache_path = os.path.join(cache_path, dataloader_name)
 
         collate_fn = collate_fn
         wrap = None
@@ -503,7 +554,7 @@ def cache_dataloaders(
             wrap=wrap,
             block_id=block_id,
             custom_prefix=custom_prefix,
-            cache_path_is_dir=cache_path_is_dir
+            use_path_as_is=use_path_as_is
         )
     return res
 
@@ -541,7 +592,7 @@ def main():
         args.cache_save_path,
         model_config,
         block_id=int(args.layer_cutoff),
-        cache_path_is_dir=False
+        use_path_as_is=True
         # custom_prefix="deit3_2layer_straight_order"
     )
 
