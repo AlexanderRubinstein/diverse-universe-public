@@ -262,6 +262,8 @@ def cross_eval(
         # "a2d_score"
     ]
 
+    recompute_all = experiment_config.get("recompute_all", False)
+
     metrics_mappings = make_metrics_mappings(eval_type, ood_metric_type)
 
     if eval_type == "ood_gen":
@@ -289,7 +291,9 @@ def cross_eval(
             prune_metrics=[],
             evaluation_kwargs=eval_kwargs,
             logger=logger,
-            model_to_prop_dict=model_to_prop_dict
+            model_to_prop_dict=model_to_prop_dict,
+            results_key=eval_type,
+            recompute_all=recompute_all
         )
     elif eval_type == "ood_det":
 
@@ -315,7 +319,9 @@ def cross_eval(
                 "id_dataloader": id_dataloader # TODO(Alex | 06.05.2024): specify by config
             },
             model_to_prop_dict=model_to_prop_dict,
-            logger=logger
+            logger=logger,
+            results_key=eval_type,
+            recompute_all=recompute_all
         )
     else:
         raise NotImplementedError()
