@@ -63,7 +63,7 @@ from diverse_universe.local_datasets.wilds import (
     get_wilds_dataloaders
 )
 from diverse_universe.local_datasets.imagenet_c import (
-    get_imagenet_c_dataloader
+    get_imagenet_c_dataloaders
 )
 from diverse_universe.local_datasets.openimages import (
     get_openimages_dataloader
@@ -651,7 +651,7 @@ def get_validation_only_dataloaders(
         #         logger=logger
         #     )
         elif dataset_type == "imagenet_c":
-            val_dataloaders |= get_imagenet_c_dataloader(
+            val_dataloaders |= get_imagenet_c_dataloaders(
                 eval_batch_size,
                 easy_robust_config,
                 num_workers,
