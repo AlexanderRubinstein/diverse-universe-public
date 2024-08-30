@@ -94,7 +94,7 @@ def get_easy_robust_dataloaders(
         assert dataset_type not in val_dataloaders, "Duplicate dataset type"
         if dataset_type in ["imagenet_a", "imagenet_r", "imagenet_v2"]:
             val_dataloaders[dataset_type] = get_imagenet_arv2_dataloader(
-                train_batch_size=train_batch_size,
+                # train_batch_size=train_batch_size,
                 eval_batch_size=eval_batch_size,
                 easyrobust_config=easy_robust_config,
                 num_workers=num_workers,

@@ -17,9 +17,11 @@ from stuned.utility.utils import (
     get_with_assert,
     remove_file_or_folder,
     apply_random_seed,
-    runcmd
+    # runcmd,
+    log_or_print
     # parse_list_from_string
 )
+from stuned.utility.logger import make_logger
 
 
 # local imports
@@ -148,23 +150,25 @@ def make_in_ar_dataloader(name, path, batch_size=128, num_workers=4):
         dataset_type = "imagenet_r"
         download_func = download_in_r
 
-    expected_path = os.path.join(path, dataset_type)
+    expected_path = os.path.join(path, dataset_type.replace("_", "-"))
     if not os.path.exists(expected_path) or len(os.listdir(expected_path)) == 0:
         os.makedirs(path, exist_ok=True)
         download_func(path)
 
     imagenet_a_config = {
-        "type": "easy_robust",
-        'easy_robust': {
-            "dataset_types": [dataset_type],
-            # "data_dir": "./tmp/imagenet-a.tar.gz"
-            # "data_dir": "/mnt/lustre/work/oh/arubinstein17/cache/imagenet-a"
-            "data_dir": path
-        }
+        # "type": "easy_robust",
+        # 'easy_robust': {
+        #     "dataset_types": [dataset_type],
+        #     # "data_dir": "./tmp/imagenet-a.tar.gz"
+        #     # "data_dir": "/mnt/lustre/work/oh/arubinstein17/cache/imagenet-a"
+        #     "data_dir": path
+        # }
+        "dataset_types": [dataset_type],
+        "data_dir": expected_path
     }
 
     # _, easy_robust_dataloaders, _ = make_dataloaders( ??
-    _, easy_robust_dataloaders, _ = get_easy_robust_dataloaders(
+    _, easy_robust_dataloaders = get_easy_robust_dataloaders(
         train_batch_size=0,
         eval_batch_size=batch_size,
         easy_robust_config=imagenet_a_config,
@@ -179,7 +183,7 @@ def make_in_ar_dataloader(name, path, batch_size=128, num_workers=4):
 def prepare_dataloaders(name, path):
     if name in ["in_train", "in_val"]:
         return make_in_dataloaders(name, path)
-    if name == "in_a":
+    if name in ["in_a", "in_r"]:
         return make_in_ar_dataloader(name, path)
     else:
         raise_unknown(name, "dataset name", "prepare_dataloaders")
@@ -329,7 +333,8 @@ def save_activations(
     wrap=None,
     block_id=None,
     custom_prefix=None,
-    use_path_as_is=False
+    use_path_as_is=False,
+    logger=None
 ):
 
     if isinstance(dataset_config, dict):
@@ -403,7 +408,7 @@ def save_activations(
             )
         )
 
-    print(f"cache_file_path: {cache_file_path}")
+    log_or_print(f"cache_file_path: {cache_file_path}", logger)
 
     if os.path.exists(cache_file_path):
         overwrite = False
@@ -418,17 +423,19 @@ def save_activations(
             overwrite = True
 
         if overwrite:
-            print(
+            log_or_print(
                 f"cache path {cache_file_path} already exists \n"
-                f"But it is empty, so it will be overwritten"
+                f"But it is empty, so it will be overwritten",
+                logger
             )
             remove_file_or_folder(cache_file_path)
         else:
 
 
-            print(
+            log_or_print(
                 f"cache path {cache_file_path} already exists \n"
-                f"Skipping {dataset_type}"
+                f"Skipping {dataset_type}",
+                logger
             )
             return cache_file_path
             # os.remove(cache_file_path)
@@ -440,7 +447,7 @@ def save_activations(
 
     # assert not hasattr(dataset, "dataset"), "dataset should not be a Subset"
     if hasattr(dataset, "dataset"):
-        print("Dataset is a Subset")
+        log_or_print("Dataset is a Subset", logger)
 
     start_index = 0
 
@@ -527,7 +534,8 @@ def cache_dataloaders(
     block_id=None,
     collate_fn=None,
     custom_prefix=None,
-    use_path_as_is=False
+    use_path_as_is=False,
+    logger=None
 ):
     res = {}
     for dataloader_name, dataloader in dataloaders_dict.items():
@@ -554,7 +562,8 @@ def cache_dataloaders(
             wrap=wrap,
             block_id=block_id,
             custom_prefix=custom_prefix,
-            use_path_as_is=use_path_as_is
+            use_path_as_is=use_path_as_is,
+            logger=logger
         )
     return res
 
@@ -562,6 +571,7 @@ def cache_dataloaders(
 def main():
     # Loaded Arguments
     args = get_parser().parse_args()
+    logger = make_logger()
 
     print(args) # tmp
 
@@ -592,7 +602,8 @@ def main():
         args.cache_save_path,
         model_config,
         block_id=int(args.layer_cutoff),
-        use_path_as_is=True
+        use_path_as_is=True,
+        logger=logger
         # custom_prefix="deit3_2layer_straight_order"
     )
 
