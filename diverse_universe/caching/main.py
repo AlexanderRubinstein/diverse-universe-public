@@ -11,17 +11,17 @@ from tqdm import tqdm
 import h5py
 import numpy as np
 import torch
-from stuned.utility.utils import (
-    raise_unknown,
-    get_hash,
-    get_with_assert,
-    remove_file_or_folder,
-    apply_random_seed,
-    # runcmd,
-    log_or_print
-    # parse_list_from_string
-)
-from stuned.utility.logger import make_logger
+# from stuned.utility.utils import (
+#     raise_unknown,
+#     get_hash,
+#     get_with_assert,
+#     remove_file_or_folder,
+#     apply_random_seed,
+#     # runcmd,
+#     log_or_print
+#     # parse_list_from_string
+# )
+# from stuned.utility.logger import make_logger
 
 
 # local imports
@@ -43,11 +43,46 @@ from diverse_universe.local_datasets.from_h5 import (
 from diverse_universe.local_datasets.easy_robust import (
     download_in_a,
     download_in_r,
+    # download_oi,
     # get_imagenet_arv2_dataloader
     get_easy_robust_dataloaders
 )
-
+from diverse_universe.local_datasets.openimages import (
+    get_openimages_dataloader,
+    download_oi
+)
+# from diverse_universe.local_datasets.from_folder import (
+#     get_from_folder_dataloader
+# )
+from diverse_universe.local_datasets.inaturalist import (
+    download_inat,
+    get_inat_dataloader
+)
+from diverse_universe.local_datasets.imagenet_c import (
+    IN_C_DATALOADERS_NAMES,
+    IN_C_URL,
+    get_imagenet_c_dataloaders
+)
+# from diverse_universe.local_datasets.utils import (
+#     download_tar_from_gdrive
+# )
 sys.path.pop(0)
+
+
+from stuned.utility.utils import (
+    raise_unknown,
+    get_hash,
+    get_with_assert,
+    remove_file_or_folder,
+    apply_random_seed,
+    # runcmd,
+    log_or_print
+    # parse_list_from_string
+)
+from stuned.utility.logger import make_logger
+from stuned.local_datasets.transforms import (
+    make_default_test_transforms_imagenet
+)
 
 
 # def pop_arg_from_opts(args, arg_name):
@@ -140,20 +175,221 @@ def get_parser():
     # pickle.dump(output, open(args.output, 'wb'))
 
 
-def make_in_ar_dataloader(name, path, batch_size=128, num_workers=4):
+def empty_path(path):
+    return not os.path.exists(path) or len(os.listdir(path)) == 0
+
+
+def make_in_c_dataloaders(
+    path,
+    corruption_types=list(IN_C_DATALOADERS_NAMES.keys()),
+    severity_levels=[1, 5],
+    batch_size=128,
+    num_workers=4,
+    logger=None
+):
+    # imagenet_c_config = {
+    #     "type": "easy_robust",
+    #     'easy_robust': {
+    #         "dataset_types": ["imagenet_c"],
+    #         # "data_dir": "./tmp/imagenet-a.tar.gz"
+    #         "data_dir": "/mnt/qb/work/oh/arubinstein17/cache/ImageNet-C/imagenet-c",
+    #         # "inc_types": ["Fog"]
+    #         # "inc_types": None
+    #         "inc_types": [
+    #             'Brightness',
+    #             'Contrast',
+    #             'Defocus Blur',
+    #             'Elastic Transform',
+    #             'Fog',
+    #             'Frost',
+    #             'Gaussian Noise',
+    #             'Glass Blur',
+    #             'Impulse Noise',
+    #             'JPEG Compression',
+    #             'Motion Blur',
+    #             'Pixelate',
+    #             'Shot Noise',
+    #             'Snow',
+    #             'Zoom Blur',
+    #         ]
+    #     }
+    # }
+    if empty_path(path):
+        raise FileNotFoundError(
+            f"ImageNet-C path {path} does not exist or is empty. "
+            f"Please download ImageNet-C manually, "
+            f"e.g. from here (48GB): {IN_C_URL}"
+        )
+
+    in_c_config = {
+            # "data_dir": "/mnt/qb/work/oh/arubinstein17/cache/ImageNet-C/imagenet-c",
+            "data_dir": path,
+            # "inc_types": ["Fog"]
+            # "inc_types": None
+            "inc_types": corruption_types,
+            # [
+            #     'Brightness',
+            #     'Contrast',
+            #     'Defocus Blur',
+            #     'Elastic Transform',
+            #     'Fog',
+            #     'Frost',
+            #     'Gaussian Noise',
+            #     'Glass Blur',
+            #     'Impulse Noise',
+            #     'JPEG Compression',
+            #     'Motion Blur',
+            #     'Pixelate',
+            #     'Shot Noise',
+            #     'Snow',
+            #     'Zoom Blur',
+            # ]
+    }
+
+# _, imagenet_c_dataloaders, _ = make_dataloaders(
+#     imagenet_c_config,
+#     train_batch_size=0,
+#     eval_batch_size=128,
+#     num_workers=4
+# )
+
+# imagenet_c_dataloaders = {key: value for key, value in imagenet_c_dataloaders.items() if ("1" in key or "5" in key)}
+    imagenet_c_dataloaders = get_imagenet_c_dataloaders(
+        eval_batch_size=batch_size,
+        in_c_config=in_c_config,
+        num_workers=num_workers,
+        eval_transform=None,
+        logger=logger,
+        severity_levels=severity_levels
+    )
+    return imagenet_c_dataloaders
+
+
+# ?? don't use as is for IN-C
+
+def make_inat_dataloader(path, batch_size=128, num_workers=4, logger=None):
+#                             inaturalist_config = {
+#     "type": "easy_robust",
+#     'easy_robust': {
+#         "dataset_types": ["from_folder"],
+#         "data_dir": "/mnt/qb/work/oh/arubinstein17/cache/iNaturalist/iNaturalist/",
+#         "dataset_name": "iNaturalist"
+#     }
+# }
+
+# _, easy_robust_dataloaders, _ = make_dataloaders(
+#     inaturalist_config,
+#     train_batch_size=0,
+#     eval_batch_size=128,
+#     num_workers=4
+# )
+# inat_dataloader = easy_robust_dataloaders["iNaturalist"]
+# if eval_transform is None:
+#     eval_transform = make_default_test_transforms_imagenet()d
+    data_dir = os.path.join(path, "iNaturalist")
+    download_if_not_exists(data_dir, download_inat)
+    inat_config = {
+        # "dataset_types": ["from_folder"],
+        # "data_dir": "/mnt/qb/work/oh/arubinstein17/cache/iNaturalist/iNaturalist/",
+        # "data_dir": os.path.join(data_dir, "images"),
+        "data_dir": data_dir,
+        "dataset_name": "iNaturalist"
+    }
+    eval_transform = make_default_test_transforms_imagenet()
+
+    inat_dataloader = get_inat_dataloader(
+        # train_batch_size,
+        eval_batch_size=batch_size,
+        inat_config=inat_config,
+        num_workers=num_workers,
+        eval_transform=eval_transform,
+        logger=logger
+    )
+    return inat_dataloader
+
+
+def make_oi_dataloader(path, batch_size=128, num_workers=4, logger=None):
+
+    data_dir = os.path.join(path, "openimages")
+    # img_list = os.path.join(path, "openimage_o.txt")
+    # download_if_not_exists(data_dir, download_oi)
+    download_if_not_exists(data_dir, download_oi)
+    # assert os.path.exists(img_list)
+    # list_path = os.path.join(path, "openimage_o.txt")
+
+    openimages_config = {
+        "type": "easy_robust",
+        'easy_robust': {
+            "dataset_types": ["openimages"],
+            "data_dir": data_dir,
+            "img_list": None
+        }
+    }
+    # ??
+    oi_dataloader = get_openimages_dataloader(
+        eval_batch_size=batch_size,
+        oi_config=openimages_config,
+        num_workers=num_workers,
+        eval_transform=None,
+        logger=None
+    )
+    # _, easy_robust_dataloaders, _ = make_dataloaders(
+    #     openimages_config,
+    #     train_batch_size=0,
+    #     eval_batch_size=128,
+    #     num_workers=4
+    # )
+    # openimages_dataloader = easy_robust_dataloaders["openimages"]
+    return oi_dataloader
+
+
+def download_if_not_exists(data_dir, download_func):
+    if empty_path(data_dir):
+        # os.makedirs(path, exist_ok=True)
+        download_func(data_dir)
+
+
+def make_in_ar_dataloader(
+    name,
+    path,
+    batch_size=128,
+    num_workers=4,
+    logger=None
+):
 
     if name == "in_a":
         dataset_type = "imagenet_a"
         download_func = download_in_a
+    # elif name == "openimages":
+    #     dataset_type = name
+    #     download_func = download_oi
     else:
         assert name == "in_r"
         dataset_type = "imagenet_r"
         download_func = download_in_r
 
-    expected_path = os.path.join(path, dataset_type.replace("_", "-"))
-    if not os.path.exists(expected_path) or len(os.listdir(expected_path)) == 0:
-        os.makedirs(path, exist_ok=True)
-        download_func(path)
+    data_dir = os.path.join(path, dataset_type.replace("_", "-"))
+    # if not os.path.exists(expected_path) or len(os.listdir(expected_path)) == 0:
+    #     os.makedirs(path, exist_ok=True)
+    #     download_func(path)
+    download_if_not_exists(data_dir, download_func)
+
+#     openimages_config = {
+#     "type": "easy_robust",
+#     'easy_robust': {
+#         "dataset_types": ["openimages"],
+#         "data_dir": "/mnt/qb/work/oh/arubinstein17/cache/OpenImage/test",
+#         "img_list": "/mnt/qb/work/oh/arubinstein17/cache/OpenImage/openimage_o.txt"
+#     }
+# }
+
+# _, easy_robust_dataloaders, _ = make_dataloaders(
+#     openimages_config,
+#     train_batch_size=0,
+#     eval_batch_size=128,
+#     num_workers=4
+# )
+# openimages_dataloader = easy_robust_dataloaders["openimages"]
 
     imagenet_a_config = {
         # "type": "easy_robust",
@@ -164,7 +400,7 @@ def make_in_ar_dataloader(name, path, batch_size=128, num_workers=4):
         #     "data_dir": path
         # }
         "dataset_types": [dataset_type],
-        "data_dir": expected_path
+        "data_dir": data_dir
     }
 
     # _, easy_robust_dataloaders, _ = make_dataloaders( ??
@@ -174,17 +410,24 @@ def make_in_ar_dataloader(name, path, batch_size=128, num_workers=4):
         easy_robust_config=imagenet_a_config,
         num_workers=num_workers,
         eval_transform=None,
-        logger=None
+        logger=logger
     )
     imagenet_a_dataloader = easy_robust_dataloaders[dataset_type]
     return imagenet_a_dataloader
 
 
-def prepare_dataloaders(name, path):
+def prepare_dataloaders(name, path, logger):
+
     if name in ["in_train", "in_val"]:
-        return make_in_dataloaders(name, path)
-    if name in ["in_a", "in_r"]:
-        return make_in_ar_dataloader(name, path)
+        return make_in_dataloaders(name, path, logger=logger)
+    elif name in ["in_a", "in_r"]:
+        return make_in_ar_dataloader(name, path, logger=logger)
+    elif name == "inaturalist":
+        return make_inat_dataloader(path, logger=logger)
+    elif name == "openimages":
+        return make_oi_dataloader(path, logger=logger)
+    elif name == "in_c":
+        return make_in_c_dataloaders(path, logger=logger)
     else:
         raise_unknown(name, "dataset name", "prepare_dataloaders")
 
@@ -298,6 +541,15 @@ def make_in_dataloaders(name, path):
         to_train=True
         # to_train=False
     )
+    # im_train_dataloader, im_val_dataloaders = get_imagenet_dataloaders(
+    #     train_batch_size,
+    #     eval_batch_size,
+    #     specific_dataset_config,
+    #     train_transform=transforms,
+    #     eval_transform=eval_transforms,
+    #     return_index=specific_dataset_config.get("return_index", False),
+    #     num_workers=num_readers
+    # )
     if name == "in_train":
         return im_train_dataloader
     else:
@@ -573,13 +825,20 @@ def main():
     args = get_parser().parse_args()
     logger = make_logger()
 
-    print(args) # tmp
+    # print(args) # tmp
 
     dataset_name = args.original_dataset_name
     dataloader = prepare_dataloaders(
         dataset_name,
-        args.original_dataset_path
+        args.original_dataset_path,
+        logger
     )
+    if isinstance(dataloader, dict):
+        use_path_as_is = False
+        dataloaders_dict = dataloader
+    else:
+        use_path_as_is = True
+        dataloaders_dict = {dataset_name: dataloader}
 
     model_config = prepare_model_config(
         args.model,
@@ -595,14 +854,14 @@ def main():
         # }
         #     # | imagenet_c_dataloaders
         #     | all_dataloaders_dict,
-        {dataset_name: dataloader},
+        dataloaders_dict,
         # tmp_dict,
         # VAL_DATASETS_CACHE,
         # ?? cache path
         args.cache_save_path,
         model_config,
         block_id=int(args.layer_cutoff),
-        use_path_as_is=True,
+        use_path_as_is=use_path_as_is,
         logger=logger
         # custom_prefix="deit3_2layer_straight_order"
     )

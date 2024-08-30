@@ -13,7 +13,8 @@ from stuned.utility.utils import (
     # NAME_NUMBER_SEPARATOR,
     raise_unknown,
     # runcmd
-    run_cmd_through_popen
+    run_cmd_through_popen,
+    # remove_file_or_folder
     # get_hash,
     # parse_name_and_number
 )
@@ -195,6 +196,28 @@ def get_imagenet_arv2_dataloader(
         pin_memory=True,
         drop_last=False
     )
+
+
+# def extract_tar(tar_path):
+#     run_cmd_through_popen(
+#         f"tar -zxf {tar_path} ",
+#         # verbose=True,
+#         logger=None
+#     )
+
+
+# def download_oi(path):
+#     def make_extract_cmd(file):
+#         return (
+#             f"tar -zxf {file} " # -C $FOLDER
+#             f"&& rm {file}"
+#         )
+
+#     downloaded_tar = None # ??
+#     # gdown(test)
+#     # gdown list
+#     extract_tar(downloaded_tar)
+#     remove_file_or_folder(downloaded_tar)
 
 
 def make_download_cmd(name, path, url):

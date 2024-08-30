@@ -1,2 +1,8 @@
 path_to_main,path_to_default_config,whether_to_run,delta:kwargs/model,delta:kwargs/layer_cutoff,delta:kwargs/original_dataset_name,delta:kwargs/original_dataset_path,delta:kwargs/cache_save_path,delta:kwargs/model_path,delta:kwargs/n_epochs
-__RUNNER__,./configs/caching/caching.yaml,0,deit3b,-1,in_val,/mnt/lustre/datasets/ImageNet2012,./data/datasets/in_train_deit3b_-1.pkl,./models/deit3/deit_3_base_224_21k.pth,1
+__RUNNER__,./configs/caching/caching.yaml,0,deit3b,-1,in_val,./data/datasets/ImageNet2012,./data/datasets/cached/in_val_deit3b_-1.hdf5,./models/deit3/deit_3_base_224_21k.pth,1
+__RUNNER__,./configs/caching/caching.yaml,0,deit3b,-1,in_train,./data/datasets/ImageNet2012,./data/datasets/cached/in_train_deit3b_-1_4_epochs.hdf5,./models/deit3/deit_3_base_224_21k.pth,4
+__RUNNER__,./configs/caching/caching.yaml,0,deit3b,-1,in_a,./data/datasets,./data/datasets/cached/in_a_deit3b_-1_.hdf5,./models/deit3/deit_3_base_224_21k.pth,1
+__RUNNER__,./configs/caching/caching.yaml,0,deit3b,-1,in_r,./data/datasets,./data/datasets/cached/in_r_deit3b_-1_.hdf5,./models/deit3/deit_3_base_224_21k.pth,1
+__RUNNER__,./configs/caching/caching.yaml,0,deit3b,-1,in_c,./data/datasets/imagenet-c,./data/datasets/cached,./models/deit3/deit_3_base_224_21k.pth,1
+__RUNNER__,./configs/caching/caching.yaml,0,deit3b,-1,inaturalist,./data/datasets/,./data/datasets/cached/inat_deit3b_-1_.hdf5,./models/deit3/deit_3_base_224_21k.pth,1
+__RUNNER__,./configs/caching/caching.yaml,0,deit3b,-1,openimages,./data/datasets/,./data/datasets/cached/oi_deit3b_-1_.hdf5,./models/deit3/deit_3_base_224_21k.pth,1

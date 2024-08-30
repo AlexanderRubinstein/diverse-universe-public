@@ -6,14 +6,22 @@ from stuned.utility.utils import (
     get_project_root_path,
     get_with_assert
 )
+from stuned.local_datasets.transforms import (
+    make_default_test_transforms_imagenet
+)
 
 
 # local modules
 sys.path.insert(0, get_project_root_path())
 from diverse_universe.local_datasets.utils import (
-    ood_detection_only_warning
+    ood_detection_only_warning,
+    # download_tar_from_gdrive
+    download_and_extract_tar
 )
 sys.path.pop(0)
+
+
+OI_URL = "https://drive.google.com/uc?id=1ToRDAPliPVlJCO9WA_edTj0IiOZe36Ie"
 
 
 # TODO(Alex | 24.03.2024): drop requirement for train batch size and transform
@@ -49,7 +57,10 @@ class ImageFilelist(torch.utils.data.Dataset):
                  flist_reader=default_flist_reader,
                  loader=default_loader):
         self.root = root
-        self.imlist = flist_reader(flist)
+        if flist is None:
+            self.imlist = list(os.listdir(root))
+        else:
+            self.imlist = flist_reader(flist)
         self.transform = transform
         self.target_transform = target_transform
         self.loader = loader
@@ -68,16 +79,29 @@ class ImageFilelist(torch.utils.data.Dataset):
         return len(self.imlist)
 
 
+def download_oi(data_dir):
+    # download_tar_from_gdrive(
+    download_and_extract_tar(
+        "openimages",
+        data_dir,
+        OI_URL
+    ) # ??change url
+
+
 def get_openimages_dataloader(
     eval_batch_size,
-    easy_robust_config,
+    # easy_robust_config,
+    oi_config,
     num_workers,
     eval_transform,
     logger
 ):
-    img_list = get_with_assert(easy_robust_config, "img_list")
+    if eval_transform is None:
+        eval_transform = make_default_test_transforms_imagenet()
+
+    img_list = get_with_assert(oi_config, "img_list")
     assert img_list is not None
-    data_dir = get_with_assert(easy_robust_config, "data_dir")
+    data_dir = get_with_assert(oi_config, "data_dir")
     dataset = ImageFilelist(data_dir, img_list, eval_transform)
     ood_detection_only_warning(logger)
 

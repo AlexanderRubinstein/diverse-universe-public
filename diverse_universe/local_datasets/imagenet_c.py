@@ -2,16 +2,21 @@ import torch
 import sys
 import torchvision
 import os
+from tqdm import tqdm
 from stuned.utility.utils import (
-    get_project_root_path,
+    # get_project_root_path,
     find_by_subkey,
-    get_with_assert
+    get_with_assert,
+    log_or_print
+)
+from stuned.local_datasets.transforms import (
+    make_default_test_transforms_imagenet
 )
 
 
-# local modules
-sys.path.insert(0, get_project_root_path())
-sys.path.pop(0)
+# # local modules
+# sys.path.insert(0, get_project_root_path())
+# sys.path.pop(0)
 
 
 IN_C_DATALOADERS_NAMES = {
@@ -32,6 +37,7 @@ IN_C_DATALOADERS_NAMES = {
     'Zoom Blur': 'zoom_blur'
 }
 IN_C_MAX_SEVERITY = 5
+IN_C_URL = "http://alisec-competition.oss-cn-shanghai.aliyuncs.com/xiaofeng/easy_robust/benchmark_datasets/imagenet-c.tar.gz"
 
 
 def extract_in_c_paths(base_path, strengths, filename_substring):
@@ -57,23 +63,27 @@ def extract_in_c_paths(base_path, strengths, filename_substring):
 
 
 # inspired by: https://github.com/alibaba/easyrobust/blob/71262215c368fd21cfd1476c8fa3ec4ece53459a/easyrobust/benchmarks/ood/imagenet_c.py
-def get_imagenet_c_dataloader(
+def get_imagenet_c_dataloaders(
     eval_batch_size,
-    easy_robust_config,
+    in_c_config,
     num_workers,
     eval_transform,
-    logger
+    logger,
+    severity_levels=list(range(1, IN_C_MAX_SEVERITY + 1))
 ):
 
     inc_dataloaders = {}
-    data_dir = get_with_assert(easy_robust_config, "data_dir")
-    inc_types = easy_robust_config.get("inc_types")
+    data_dir = get_with_assert(in_c_config, "data_dir")
+    inc_types = in_c_config.get("inc_types")
     if inc_types is not None:
         inc_types = set(inc_types)
-    for name, subdir in IN_C_DATALOADERS_NAMES.items():
+    if eval_transform is None:
+        eval_transform = make_default_test_transforms_imagenet()
+    log_or_print("Creating ImageNet-C dataloaders", logger)
+    for name, subdir in tqdm(IN_C_DATALOADERS_NAMES.items()):
         if inc_types is not None and name not in inc_types:
             continue
-        for severity in range(1, IN_C_MAX_SEVERITY + 1):
+        for severity in severity_levels:
             severity = str(severity)
             inc_dataset = torchvision.datasets.ImageFolder(
                 os.path.join(

@@ -7,14 +7,18 @@ import os
 import torch
 from tqdm import tqdm
 import itertools
+import gdown
 from torchvision import transforms
 # import torch.nn.functional as F
 import numpy as np
 from stuned.utility.utils import (
     get_project_root_path,
     load_from_pickle,
-    aggregate_tensors_by_func,
-    get_even_from_wrapped
+    # aggregate_tensors_by_func,
+    get_even_from_wrapped,
+    error_or_print,
+    run_cmd_through_popen,
+    remove_file_or_folder
 )
 
 
@@ -799,7 +803,56 @@ def extract_subset_indices(subset_indices, split):
 
 
 def ood_detection_only_warning(logger):
-    logger.error(
+    # logger.error(
+    #     "All images have label 0 here. "
+    #     "This dataloader is purely for OOD detection."
+    # )
+    error_or_print(
         "All images have label 0 here. "
-        "This dataloader is purely for OOD detection."
+        "This dataloader is purely for OOD detection.",
+        logger
     )
+
+
+def extract_tar(tar_path, folder):
+    run_cmd_through_popen(
+        f"tar -zvxf {tar_path} -C {folder}",
+        # verbose=True,
+        logger=None
+    )
+
+
+def download_and_extract_tar(name, data_dir, download_url):
+    # def make_extract_cmd(file):
+    #     return (
+    #         f"tar -zxf {file} " # -C $FOLDER
+    #         # f"&& rm {file}"
+    #     )
+    parent_folder = os.path.dirname(data_dir)
+    downloaded_tar = os.path.join(parent_folder, f"{name}.tar.gz")
+    if not os.path.exists(downloaded_tar):
+        os.makedirs(os.path.dirname(downloaded_tar), exist_ok=True)
+        if "google" in download_url:
+            download_type = "gdrive"
+        else:
+            download_type = "wget"
+
+        if download_type == "wget":
+            run_cmd_through_popen(
+                f"wget {download_url} -O {downloaded_tar}",
+                # verbose=True,
+                logger=None
+            )
+        else:
+            assert download_type == "gdrive"
+            gdown.download(download_url, downloaded_tar, quiet=False)
+            # gdown
+
+    # downloaded_tar = None # ??
+    # gdown(test)
+    # gdown list
+    extract_tar(downloaded_tar, parent_folder)
+    remove_file_or_folder(downloaded_tar)
+
+
+
