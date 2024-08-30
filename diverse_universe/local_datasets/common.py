@@ -521,7 +521,8 @@ def make_dataloaders(
     eval_batch_size,
     num_workers,
     to_train=False,
-    use_train_for_eval=False
+    use_train_for_eval=False,
+    logger=None
 ):
 
     assert "use_train_for_eval" not in dataset_config
@@ -543,7 +544,7 @@ def make_dataloaders(
         },
         "cache_path": make_default_cache_path()
     }
-    return get_dataloaders(exp_config)
+    return get_dataloaders(exp_config, logger=logger)
 
 
 def make_hdf5_dataloader_from_path(

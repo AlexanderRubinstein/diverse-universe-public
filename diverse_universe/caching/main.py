@@ -432,7 +432,7 @@ def prepare_dataloaders(name, path, logger):
         raise_unknown(name, "dataset name", "prepare_dataloaders")
 
 
-def make_in_dataloaders(name, path):
+def make_in_dataloaders(name, path, logger):
     imagenet_config = {
         "type": "imagenet1k",
         "imagenet1k": {
@@ -538,7 +538,8 @@ def make_in_dataloaders(name, path):
         train_batch_size=batch_size,
         eval_batch_size=batch_size,
         num_workers=num_workers,
-        to_train=True
+        to_train=True,
+        logger=logger
         # to_train=False
     )
     # im_train_dataloader, im_val_dataloaders = get_imagenet_dataloaders(
