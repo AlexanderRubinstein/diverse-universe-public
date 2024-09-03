@@ -2,6 +2,7 @@ import PIL
 import sys
 import os
 import torch
+# import shutil
 from stuned.utility.utils import (
     get_project_root_path,
     get_with_assert
@@ -21,7 +22,7 @@ from diverse_universe.local_datasets.utils import (
 sys.path.pop(0)
 
 
-OI_URL = "https://drive.google.com/uc?id=1ToRDAPliPVlJCO9WA_edTj0IiOZe36Ie"
+OI_URL = "https://drive.google.com/uc?id=1NrqaSV9GFa33c0d-6N0qMxdy_qAqU6_7"
 
 
 # TODO(Alex | 24.03.2024): drop requirement for train batch size and transform
@@ -58,7 +59,7 @@ class ImageFilelist(torch.utils.data.Dataset):
                  loader=default_loader):
         self.root = root
         if flist is None:
-            self.imlist = list(os.listdir(root))
+            self.imlist = [(path, 0) for path in os.listdir(root)]
         else:
             self.imlist = flist_reader(flist)
         self.transform = transform
@@ -86,6 +87,10 @@ def download_oi(data_dir):
         data_dir,
         OI_URL
     ) # ??change url
+    # shutil.move(
+    #     os.path.join(os.path.dirname(data_dir), "test_filtered"),
+    #     os.path.join(os.path.dirname(data_dir), "openimages")
+    # )
 
 
 def get_openimages_dataloader(
@@ -100,7 +105,7 @@ def get_openimages_dataloader(
         eval_transform = make_default_test_transforms_imagenet()
 
     img_list = get_with_assert(oi_config, "img_list")
-    assert img_list is not None
+    # assert img_list is not None
     data_dir = get_with_assert(oi_config, "data_dir")
     dataset = ImageFilelist(data_dir, img_list, eval_transform)
     ood_detection_only_warning(logger)

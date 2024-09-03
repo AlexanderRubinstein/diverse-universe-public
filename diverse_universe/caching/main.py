@@ -318,12 +318,14 @@ def make_oi_dataloader(path, batch_size=128, num_workers=4, logger=None):
     # list_path = os.path.join(path, "openimage_o.txt")
 
     openimages_config = {
-        "type": "easy_robust",
-        'easy_robust': {
-            "dataset_types": ["openimages"],
-            "data_dir": data_dir,
-            "img_list": None
-        }
+        # "type": "easy_robust",
+        # 'easy_robust': {
+        #     "dataset_types": ["openimages"],
+        #     "data_dir": data_dir,
+        #     "img_list": None
+        # }
+        "data_dir": data_dir,
+        "img_list": None
     }
     # ??
     oi_dataloader = get_openimages_dataloader(
@@ -331,7 +333,7 @@ def make_oi_dataloader(path, batch_size=128, num_workers=4, logger=None):
         oi_config=openimages_config,
         num_workers=num_workers,
         eval_transform=None,
-        logger=None
+        logger=logger
     )
     # _, easy_robust_dataloaders, _ = make_dataloaders(
     #     openimages_config,

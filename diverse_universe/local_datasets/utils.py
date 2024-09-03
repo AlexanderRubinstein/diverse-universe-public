@@ -845,7 +845,12 @@ def download_and_extract_tar(name, data_dir, download_url):
             )
         else:
             assert download_type == "gdrive"
-            gdown.download(download_url, downloaded_tar, quiet=False)
+            gdown.download(
+                download_url,
+                downloaded_tar,
+                quiet=False,
+                use_cookies=False
+            )
             # gdown
 
     # downloaded_tar = None # ??
