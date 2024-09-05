@@ -46,6 +46,9 @@ sys.path.insert(0, get_project_root_path())
 # from local_models.utils import (
 #     make_model_classes_wrapper
 # )
+from diverse_universe.local_datasets.utils import (
+    download_and_extract_tar
+)
 sys.path.pop(0)
 
 
@@ -220,14 +223,14 @@ def get_imagenet_arv2_dataloader(
 #     remove_file_or_folder(downloaded_tar)
 
 
-def make_download_cmd(name, path, url):
-    return (
-        f"export FOLDER={path} "
-        f"&& mkdir -p $FOLDER "
-        f"&& export FILE=$FOLDER/{name}.tar.gz "
-        f"&& wget {url} -O $FILE && tar -zxf $FILE -C $FOLDER "
-        f"&& rm $FOLDER/{name}.tar.gz"
-    )
+# def make_download_cmd(name, path, url):
+#     return (
+#         f"export FOLDER={path} "
+#         f"&& mkdir -p $FOLDER "
+#         f"&& export FILE=$FOLDER/{name}.tar.gz "
+#         f"&& wget {url} -O $FILE && tar -zxf $FILE -C $FOLDER "
+#         f"&& rm $FOLDER/{name}.tar.gz"
+#     )
 
 
 def download_in_a(path):
@@ -237,25 +240,28 @@ def download_in_a(path):
 #             logger=logger
 #         )
 # run_cmd_through_popen(cmd_to_run, logger)
-    run_cmd_through_popen(
-        make_download_cmd("imagenet-a", path, IN_A_URL),
-        # verbose=True,
-        logger=None
-    )
+    # run_cmd_through_popen(
+    #     make_download_cmd("imagenet-a", path, IN_A_URL),
+    #     # verbose=True,
+    #     logger=None
+    # )
+    # download_and_extract_tar("imagenet-r", data_dir, download_url)
     # os.sytem(
     #     make_download_cmd("imagenet-a", path, IN_A_URL)
     # )
+    download_and_extract_tar("imagenet-a", path, IN_A_URL)
 
 
 def download_in_r(path):
-    run_cmd_through_popen(
-        make_download_cmd("imagenet-r", path, IN_R_URL),
-        # verbose=True,
-        logger=None
-    )
+    # run_cmd_through_popen(
+    #     make_download_cmd("imagenet-r", path, IN_R_URL),
+    #     # verbose=True,
+    #     logger=None
+    # )
     # os.sytem(
     #     make_download_cmd("imagenet-r", path, IN_R_URL)
     # )
+    download_and_extract_tar("imagenet-r", path, IN_R_URL)
 
 
 # def collate_fn_hard(batch):
