@@ -2,7 +2,8 @@ import os
 import sys
 import torch
 import shutil
-import sklearn
+# import sklearn
+from sklearn.metrics import roc_auc_score
 # import sklearn.metrics as skmetrics
 import numpy as np
 # import torch.nn.functional as F
@@ -367,28 +368,34 @@ def prepare_dataloaders(exp_type, eval_type, cached_datasets_info):
         return prepare_deit3b_dataloaders(eval_type, cached_datasets_info)
     # elif exp_type == "waterbirds_dataloaders":
     #     return prepare_waterbirds_dataloaders(eval_type)
-    # elif exp_type == "debug":
-    #     return prepare_debug_dataloaders(cached_datasets_info)
+    elif exp_type == "debug":
+        return prepare_debug_dataloaders(cached_datasets_info)
     else:
         raise_unknown(exp_type, "experiment_type", "prepare_dataloaders")
 
 
-# def prepare_debug_dataloaders():
-#     # TODO(Alex | 23.07.2024): Move paths to config
-#     # ??
-#     cached_dataloaders_deit3b_dict = make_cached_dataloaders(
-#         {
-#             "in_val": IN_VAL_CACHED_2LAYER_PATH,
-#             "imagenet_a": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/imagenet_a/f37703ce0aea0e55ab2c_torch_load_block_-1_model_imagenet_a_dataset_1_epochs_7500_samples.hdf5",
-#             "imagenet_r": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/imagenet_r/c9fe46d6544688f46907_torch_load_block_-1_model_imagenet_r_dataset_1_epochs_30000_samples.hdf5"
-#         }
-#     )
-#     deit3b_2layers_all_dataloaders_dict = {
-#         "imagenet_a": (cached_dataloaders_deit3b_dict["imagenet_a"], "ina"),
-#         "imagenet_r": (cached_dataloaders_deit3b_dict["imagenet_r"], "inr"),
-#         "in_val": cached_dataloaders_deit3b_dict["in_val"]
-#     }
-#     return deit3b_2layers_all_dataloaders_dict
+def prepare_debug_dataloaders(cached_datasets_info):
+    # TODO(Alex | 23.07.2024): Move paths to config
+    # ??
+    # cached_dataloaders_deit3b_dict = make_cached_dataloaders(
+    #     {
+    #         "in_val": IN_VAL_CACHED_2LAYER_PATH,
+    #         "imagenet_a": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/imagenet_a/f37703ce0aea0e55ab2c_torch_load_block_-1_model_imagenet_a_dataset_1_epochs_7500_samples.hdf5",
+    #         "imagenet_r": "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/imagenet_r/c9fe46d6544688f46907_torch_load_block_-1_model_imagenet_r_dataset_1_epochs_30000_samples.hdf5"
+    #     }
+    # )
+    deit3b_2layers_all_dataloaders_dict = make_cached_dataloaders(
+        subset_dict_by_keys(
+            get_with_assert(cached_datasets_info, "path_mapping"),
+            ["in_val", "imagenet_a", "imagenet_r" ]
+        )
+    )
+    deit3b_2layers_all_dataloaders_dict = {
+        "imagenet_a": (deit3b_2layers_all_dataloaders_dict["imagenet_a"], "ina"),
+        "imagenet_r": (deit3b_2layers_all_dataloaders_dict["imagenet_r"], "inr"),
+        "in_val": deit3b_2layers_all_dataloaders_dict["in_val"]
+    }
+    return deit3b_2layers_all_dataloaders_dict
 
 
 def subset_dict_by_keys(input_dict, keys):
@@ -814,7 +821,8 @@ def compute_roc_auc(detailed_res_id, detailed_res_ood, metrics_mappings, verbose
                 detailed_res_ood, # ood has higher metric
                 metric_name
             )
-        roc_auc = sklearn.metrics.roc_auc_score(labels, metric_values)
+        # roc_auc = sklearn.metrics.roc_auc_score(labels, metric_values)
+        roc_auc = roc_auc_score(labels, metric_values)
         return roc_auc
 
     def add_derivable_score(detailed_res):
