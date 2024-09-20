@@ -11,8 +11,8 @@ data:
       max_chunk: 1281167
       num_classes: 1000
       path:
-        train: /mnt/qb/work/oh/arubinstein17/cache/ImageNet1k/train_cache/ed4f10f4ddeb07f1d876_torch_load_block_-1_model_imagenet1k_dataset_4_epochs_1281167_samples.hdf5
-        val: /mnt/qb/work/oh/arubinstein17/cache/ImageNet1k/val_cache/ed4f10f4ddeb07f1d876_torch_load_block_-1_model_imagenet1k_dataset_1_epochs_50000_samples.hdf5
+        train: ./data/datasets/in_train_deit3b_-1_4_epochs.pkl
+        val: ./data/datasets/cached/in_val_deit3b_-1.hdf5
       total_samples:
         train: 5124668
     type: from_h5
@@ -59,7 +59,6 @@ params:
       divdis:
         disagree_after_epoch: 0
         disagree_below_threshold: null
-        gamma: <Placeholder>
         lambda: null
         loss_type: a2d
         manual_lambda: 0.5
