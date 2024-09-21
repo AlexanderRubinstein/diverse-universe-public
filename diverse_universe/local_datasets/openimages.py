@@ -83,9 +83,9 @@ class ImageFilelist(torch.utils.data.Dataset):
 def download_oi(data_dir):
     # download_tar_from_gdrive(
     download_and_extract_tar(
-        "openimages",
         data_dir,
-        OI_URL
+        OI_URL,
+        "openimages"
     ) # ??change url
     # shutil.move(
     #     os.path.join(os.path.dirname(data_dir), "test_filtered"),

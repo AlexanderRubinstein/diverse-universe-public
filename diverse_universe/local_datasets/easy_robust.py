@@ -249,7 +249,7 @@ def download_in_a(path):
     # os.sytem(
     #     make_download_cmd("imagenet-a", path, IN_A_URL)
     # )
-    download_and_extract_tar("imagenet-a", path, IN_A_URL)
+    download_and_extract_tar(path, IN_A_URL, "imagenet-a")
 
 
 def download_in_r(path):
@@ -261,7 +261,7 @@ def download_in_r(path):
     # os.sytem(
     #     make_download_cmd("imagenet-r", path, IN_R_URL)
     # )
-    download_and_extract_tar("imagenet-r", path, IN_R_URL)
+    download_and_extract_tar(path, IN_R_URL, "imagenet-r")
 
 
 # def collate_fn_hard(batch):

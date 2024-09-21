@@ -72,7 +72,7 @@ def download_inat(data_dir, logger=None):
     )
     # wget http://pages.cs.wisc.edu/~huangrui/imagenet_ood_dataset/iNaturalist.tar.gz
     # download_tar_from_gdrive("inaturalist", data_dir)
-    download_and_extract_tar("iNaturalist", data_dir, INATURALIST_URL)
+    download_and_extract_tar(data_dir, INATURALIST_URL, "iNaturalist")
 
 
 def get_inat_dataloader(

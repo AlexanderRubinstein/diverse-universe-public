@@ -18,7 +18,8 @@ from stuned.utility.utils import (
     get_even_from_wrapped,
     error_or_print,
     run_cmd_through_popen,
-    remove_file_or_folder
+    remove_file_or_folder,
+    get_current_time
 )
 
 
@@ -822,16 +823,9 @@ def extract_tar(tar_path, folder):
     )
 
 
-def download_and_extract_tar(name, data_dir, download_url):
-    # def make_extract_cmd(file):
-    #     return (
-    #         f"tar -zxf {file} " # -C $FOLDER
-    #         # f"&& rm {file}"
-    #     )
-    parent_folder = os.path.dirname(data_dir)
-    downloaded_tar = os.path.join(parent_folder, f"{name}.tar.gz")
-    if not os.path.exists(downloaded_tar):
-        os.makedirs(os.path.dirname(downloaded_tar), exist_ok=True)
+def download_file(file_path, download_url):
+    if not os.path.exists(file_path):
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
         if "google" in download_url:
             download_type = "gdrive"
         else:
@@ -839,7 +833,7 @@ def download_and_extract_tar(name, data_dir, download_url):
 
         if download_type == "wget":
             run_cmd_through_popen(
-                f"wget {download_url} -O {downloaded_tar}",
+                f"wget {download_url} -O {file_path}",
                 # verbose=True,
                 logger=None
             )
@@ -847,11 +841,46 @@ def download_and_extract_tar(name, data_dir, download_url):
             assert download_type == "gdrive"
             gdown.download(
                 download_url,
-                downloaded_tar,
+                file_path,
                 quiet=False,
                 use_cookies=False
             )
             # gdown
+
+
+def download_and_extract_tar(data_dir, download_url, name=None):
+    # def make_extract_cmd(file):
+    #     return (
+    #         f"tar -zxf {file} " # -C $FOLDER
+    #         # f"&& rm {file}"
+    #     )
+    if name is None:
+        name = f"tmp_tar_{get_current_time()}"
+    parent_folder = os.path.dirname(data_dir)
+    downloaded_tar = os.path.join(parent_folder, f"{name}.tar.gz")
+    download_file(downloaded_tar, download_url)
+    # if not os.path.exists(downloaded_tar):
+    #     os.makedirs(os.path.dirname(downloaded_tar), exist_ok=True)
+    #     if "google" in download_url:
+    #         download_type = "gdrive"
+    #     else:
+    #         download_type = "wget"
+
+    #     if download_type == "wget":
+    #         run_cmd_through_popen(
+    #             f"wget {download_url} -O {downloaded_tar}",
+    #             # verbose=True,
+    #             logger=None
+    #         )
+    #     else:
+    #         assert download_type == "gdrive"
+    #         gdown.download(
+    #             download_url,
+    #             downloaded_tar,
+    #             quiet=False,
+    #             use_cookies=False
+    #         )
+    #         # gdown
 
     # downloaded_tar = None # ??
     # gdown(test)
