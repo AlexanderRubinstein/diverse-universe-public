@@ -14,7 +14,7 @@ from stuned.utility.utils import (
 # local imports
 sys.path.insert(
     0,
-    os.path.dirname(__file__)
+    os.path.dirname(os.path.dirname(__file__))
 )
 # from diverse_universe.local_datasets.imagenet_c import (
 #     IN_C_DATALOADERS_NAMES,
@@ -35,17 +35,27 @@ sys.path.pop(0)
 # }
 
 
-CACHED_DATA_URL = ??
-DATASETS_FOLDER = os.path.join(get_project_root_path(), "data", "datasets")
+CACHED_DATA_URL = "https://drive.google.com/file/d/1CL6U8oa7vCCrYdVCcTrRZSUFVKXEe3q0/view?usp=sharing"
+DATASETS_FOLDER = os.path.join(
+    get_project_root_path(),
+    "data",
+    "datasets",
+    "cached"
+)
 
 
 def main():
-    os.makedirs(DATASETS_FOLDER, exist_ok=True)
+    parent_folder = os.path.dirname(DATASETS_FOLDER)
+    os.makedirs(parent_folder, exist_ok=True)
     # for model_path, model_url in MODELS_DICT.items():
     #     assert not os.path.exists(model_path), \
     #         f"Path {model_path} already exists!"
     #     download_file(model_path, model_url)
     download_and_extract_tar(DATASETS_FOLDER, CACHED_DATA_URL)
+    # shutil.move(
+    #     os.path.join(parent_folder, "cache"),
+    #     os.path.join(DATASETS_FOLDER)
+    # )
 
 
 if __name__ == "__main__":

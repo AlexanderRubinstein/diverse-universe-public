@@ -843,7 +843,8 @@ def download_file(file_path, download_url):
                 download_url,
                 file_path,
                 quiet=False,
-                use_cookies=False
+                use_cookies=False,
+                fuzzy=True
             )
             # gdown
 
@@ -855,7 +856,8 @@ def download_and_extract_tar(data_dir, download_url, name=None):
     #         # f"&& rm {file}"
     #     )
     if name is None:
-        name = f"tmp_tar_{get_current_time()}"
+        cur_time = str(get_current_time()).replace(' ', '_')
+        name = f"tmp_tar_{cur_time}"
     parent_folder = os.path.dirname(data_dir)
     downloaded_tar = os.path.join(parent_folder, f"{name}.tar.gz")
     download_file(downloaded_tar, download_url)

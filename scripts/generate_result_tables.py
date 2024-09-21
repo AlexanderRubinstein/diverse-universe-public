@@ -9,7 +9,7 @@ from stuned.utility.utils import (
 # local imports
 sys.path.insert(
     0,
-    os.path.dirname(__file__)
+    os.path.dirname(os.path.dirname(__file__))
 )
 from diverse_universe.utility.for_scripts import (
     ALL_CORRUPTION_NAMES,

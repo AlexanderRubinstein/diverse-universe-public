@@ -14,7 +14,7 @@ from stuned.utility.utils import (
 # local imports
 sys.path.insert(
     0,
-    os.path.dirname(__file__)
+    os.path.dirname(os.path.dirname(__file__))
 )
 # from diverse_universe.local_datasets.imagenet_c import (
 #     IN_C_DATALOADERS_NAMES,
@@ -28,10 +28,10 @@ sys.path.pop(0)
 
 MODELS_FOLDER = os.path.join(get_project_root_path(), "models", "symlinked")
 MODELS_DICT = {
-    os.path.join(MODELS_FOLDER, "50_models.pkl"): " url ??",
-    os.path.join(MODELS_FOLDER, "ood_det_cov.pkl"): " url ??",
-    os.path.join(MODELS_FOLDER, "ood_det_sem.pkl"): " url ??",
-    os.path.join(MODELS_FOLDER, "ood_gen.pkl"): " url ??",
+    os.path.join(MODELS_FOLDER, "50_models.pkl"): "https://drive.google.com/uc?id=1qFmQ2t1gIegAUrXDcQKNa8wrTym0t6AK",
+    os.path.join(MODELS_FOLDER, "ood_det_cov.pkl"): "https://drive.google.com/file/d/1FikmdPrxNfsTWg9s2uWGpilhZi7ApKzO/view?usp=drive_link",
+    os.path.join(MODELS_FOLDER, "ood_det_sem.pkl"): "https://drive.google.com/file/d/1HBFgXMx3JU7XmVJzLhdL3hf0e9wbLNhS/view?usp=drive_link",
+    os.path.join(MODELS_FOLDER, "ood_gen.pkl"): "https://drive.google.com/file/d/1Z1ILwX0yfvrdz-N0sTiqHsAcEDHrbe2K/view?usp=drive_link",
 }
 
 
