@@ -790,6 +790,7 @@ def cache_dataloaders(
     collate_fn=None,
     custom_prefix=None,
     use_path_as_is=False,
+    n_epochs=1,
     logger=None
 ):
     res = {}
@@ -807,7 +808,7 @@ def cache_dataloaders(
         res[dataloader_name] = save_activations(
             dataloader,
             cur_cache_path,
-            n_epochs=1,
+            n_epochs=n_epochs,
             total_samples=0,
             dataset_config=dataloader_name,
             model_config=model_config,
@@ -865,6 +866,7 @@ def main():
         model_config,
         block_id=int(args.layer_cutoff),
         use_path_as_is=use_path_as_is,
+        n_epochs=args.n_epochs,
         logger=logger
         # custom_prefix="deit3_2layer_straight_order"
     )
