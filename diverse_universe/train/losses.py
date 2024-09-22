@@ -541,10 +541,9 @@ def pairwise_distances(stacked_vectors, p=2):
     distances = torch.cdist(stacked_vectors, stacked_vectors, p=p)
 
     # Step 2: Calculate the average pairwise distance
-    # We only need the upper triangle of the matrix (excluding the diagonal) to avoid duplicate distances
-    # and to exclude the distance of vectors with themselves (which is zero)
-    # triu_indices = torch.triu_indices(distances.shape[0], distances.shape[1], offset=1)
-    # pairwise_distances = distances[triu_indices[0], triu_indices[1]]
+    # We only need the upper triangle of the matrix (excluding the diagonal)
+    # to avoid duplicate distances and to exclude the distance of vectors
+    # with themselves (which is zero)
 
     # Compute the mean of these distances
     average_distance = distances.mean((-1, -2))
@@ -690,7 +689,11 @@ def div_std(outputs):
 
 
 def kl_divergence(out1, out2):
-    loss = F.kl_div(torch.log(F.softmax(out1, dim=-1) + 1e-8), F.softmax(out2, dim=-1) + 1e-8, reduction='batchmean')
+    loss = F.kl_div(
+        torch.log(F.softmax(out1, dim=-1) + 1e-8),
+        F.softmax(out2, dim=-1) + 1e-8,
+        reduction='batchmean'
+    )
     return -loss  # negative because we want to maximize KL divergence
 
 
