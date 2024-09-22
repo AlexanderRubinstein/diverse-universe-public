@@ -127,7 +127,8 @@ def get_parser():
     )
     parser.add_argument(
         "--n_epochs",
-        help="How many epochs to cache (makes sense for random augmentations)"
+        help="How many epochs to cache (makes sense for random augmentations)",
+        type=int
     )
     # parser.add_argument("--input", help="Path to a tar file")
     # parser.add_argument("--range", help="Range of images to process", default=None)
