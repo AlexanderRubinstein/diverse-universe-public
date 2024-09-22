@@ -35,7 +35,7 @@ sys.path.pop(0)
 # }
 
 
-CACHED_DATA_URL = "https://drive.google.com/file/d/1CL6U8oa7vCCrYdVCcTrRZSUFVKXEe3q0/view?usp=sharing"
+CACHED_DATA_URL = "https://drive.google.com/file/d/1DT3uxqAt2-tvgYZAW5JIXnAjpiQ1FETq/view?usp=sharing"
 DATASETS_FOLDER = os.path.join(
     get_project_root_path(),
     "data",

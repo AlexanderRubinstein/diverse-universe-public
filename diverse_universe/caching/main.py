@@ -590,7 +590,8 @@ def save_activations(
     block_id=None,
     custom_prefix=None,
     use_path_as_is=False,
-    logger=None
+    logger=None,
+    device=torch.device("cuda:0")
 ):
 
     if isinstance(dataset_config, dict):
@@ -608,7 +609,7 @@ def save_activations(
         dataset = dataset.dataset
         # assert batch_size == dataloader.batch_size
     # else:
-    device = torch.device("cuda:0")
+    # device = torch.device("cuda:0")
 
     model = build_model(model_config)
 

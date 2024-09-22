@@ -11,7 +11,7 @@ data:
       max_chunk: 1281167
       num_classes: 1000
       path:
-        train: ./data/datasets/in_train_deit3b_-1_4_epochs.pkl
+        train: ./data/datasets/cached/in_train_deit3b_-1_4_epochs.hdf5
         val: ./data/datasets/cached/in_val_deit3b_-1.hdf5
       total_samples:
         train: 5124668
