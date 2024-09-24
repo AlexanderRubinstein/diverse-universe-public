@@ -17,6 +17,7 @@ To create a python environment we use [anaconda](https://www.anaconda.com/).
 To create and activate a conda environment with `Python 3.10.4` run the following commands:
 
 ```
+mkdir ./envs
 conda create --yes --prefix ./envs/diverse_universe python==3.10.4
 conda activate ./envs/diverse_universe/
 pip install -r requirements.txt
@@ -203,7 +204,7 @@ OOD generalization results for ensemble accuracy. They reproduce rows for SED-A2
 | 50_models_   |   83.6 |       **50.6** |       **53.8** | 75.8 | 39.3 |
 | ood_gen_     |   **85.3** |       43.0 |       48.7 | **77.3** | **40.7** |
 
-OOD detection AUROC results for PDS (called "div_continous_unique_per_sample" in code). They reproduce row SED-A2D for covariate and semantic shift columns correspondingly in the Table 3 in the paper:
+OOD detection AUROC results for PDS (called "div_continous_unique_per_sample" in the code). They reproduce row SED-A2D for covariate and semantic shift columns correspondingly in the Table 3 in the paper:
 
 |              | C-1 | C-5 | iNaturalist | OpenImages  |
 |--------------|--------|------------|------------|------|
