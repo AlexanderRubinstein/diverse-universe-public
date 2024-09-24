@@ -10,7 +10,10 @@ sys.path.insert(
     0,
     os.path.dirname(os.path.dirname(__file__))
 )
-from diverse_universe.local_datasets.utils import download_file
+from diverse_universe.local_datasets.utils import (
+    SHARING_SUFFIX,
+    download_file
+)
 sys.path.pop(0)
 
 
@@ -25,7 +28,6 @@ MODELS_DICT = {
     os.path.join(MODELS_FOLDER, "ood_gen.pkl"):
         "https://drive.google.com/file/d/1N_3feoS-0Fy_gPlu9KyiRAB7jbUFlDvL",
 }
-SHARING_SUFFIX = "/view?usp=sharing"
 
 
 def main():

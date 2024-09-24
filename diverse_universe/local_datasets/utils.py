@@ -46,6 +46,7 @@ JSON_PATH = os.path.join(
     "diverse_universe",
     "json"
 )
+SHARING_SUFFIX = "/view?usp=sharing"
 # ADJUSTED_GROUPWISE_KEY = "_adjusted"
 
 
