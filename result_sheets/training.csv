@@ -1,0 +1,5 @@
+path_to_main,path_to_default_config,whether_to_run
+./diverse_universe/train/main.py,./configs/training/OOD_gen.yaml,1
+./diverse_universe/train/main.py,./configs/training/50_models.yaml,1
+./diverse_universe/train/main.py,./configs/training/OOD_det_covariate.yaml,1
+./diverse_universe/train/main.py,./configs/training/OOD_det_semantic.yaml,1
