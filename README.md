@@ -1,11 +1,12 @@
-# diverse-universe-public
+# Scalable Ensemble Diversification for OOD Generalization and Detection
+
 ## Overview
 
 ![Scalable Ensemble Diversification for OOD Generalization and Detection](./figures/teaser.png "Scalable Ensemble Diversification for OOD Generalization and Detection")
 
 This is an implementation of the paper "Scalable Ensemble Diversification for OOD Generalization and Detection".
 
-In the section ["Installation"](#installation) we explain how to create a conda environment with all the necessary libraries. The sections ["Download datasets"](#download-datasets) and ["Download models"](#download-models) describe how to download datasets and models correspondingly. The section ["Evaluate models"](#evaluate-models) explains how to evaluate the models and reproduce the results reported in the paper. The section ["Train models"](#train-models) explains how to train models from scratch without downloading them. The section ["Cache datasets"](#cache-datasets) describes how to cache datsets from scratch without downloading cached datasets. The section ["Note about .csv files"](#note-about-.csv-files) gives additional information about scripts running pipeline we use in this repository.
+In the section ["Installation"](#installation) we explain how to create a conda environment with all the necessary libraries. The sections ["Download datasets"](#download-datasets) and ["Download models"](#download-models) describe how to download datasets and models correspondingly. The section ["Evaluate models"](#evaluate-models) explains how to evaluate the models and reproduce the results reported in the paper. The section ["Train models"](#train-models) explains how to train models from scratch without downloading them. The section ["Cache datasets"](#cache-datasets) describes how to cache datsets from scratch without downloading cached datasets. The section ["Note about stuned.run_from_csv.py and .csv files"](#note-about-stunedrun_from_csvpy-and-csv-files) gives additional information about scripts running pipeline we use in this repository.
 
 All commands are supposed to be run from the root of this repository and all paths are given relatively to it.
 
@@ -25,21 +26,21 @@ pip install git+https://github.com/bethgelab/model-vs-human
 
 ## Download datasets
 
- Here we reproduce the results for the Deit3B [1] models with all but the last two layers frozen, therefore outputs of the previous layers can be cached. To save the computation we use these cached outputs (features after the Deit3B feature extractor) instead of the original images.
+ Here we reproduce the results for the Deit3B [1] models with all but the last two layers frozen, therefore outputs of the previous layers can be cached. To save the computation we use these cached outputs (features after the Deit3B feature extractor of size 768) instead of the original images.
 
-To download the cached datasets please run the following command (see ["Data folder structure"](#data-folder-structure) for details of the resulting folders structure):
+To download the cached evaluation datasets (5GB) please run the following command (see ["Data folder structure"](#data-folder-structure) for details of the resulting folders structure):
 
 ```
 python scripts/download_datasets.py
 ```
 
-To manually generate such cached features instead of downloading them please follow the instructions in the section "Cache datasets".
+To manually generate such cached features instead of downloading them please follow the instructions in the section ["Cache datasets"](#cache-datasets).
 
 [1] Touvron, Hugo, Matthieu Cord, and Hervé Jégou. "Deit iii: Revenge of the vit." European conference on computer vision. Cham: Springer Nature Switzerland, 2022.
 
 ### Data folder structure
 
-Upon a successful `scripts/download_datasets.py` script completion `data` folder will have the following structure:
+Upon a successful `scripts/download_datasets.py` script completion `data` folder will have the following structure (except for the file `in_train_deit3b_-1_4_epochs.hdf5` (15GB), it should be generated separately, see ["Cache datasets"](#cache-datasets) for details):
 
 ```
 📦data
@@ -140,7 +141,7 @@ In case the structure above is not clear, here is the huge detailed folder struc
 
 ## Download models
 
-To download the models for evaluation please run the following command (see ["Models folder structure"](#models-folder-structure) for details of the resulting folders structure):
+To download the models for evaluation (3.2GB) please run the following command (see ["Models folder structure"](#models-folder-structure) for details of the resulting folders structure):
 
 ```
 python scripts/download_models.py
@@ -163,12 +164,12 @@ Upon a successful `scripts/download_models.py` script completion the `models` fo
 
 ## Train models
 
-Make sure that cached datasets are in folder and have the structure describe in ["Models folder structure"](#models-folder-structure).
+Make sure that cached train and validation datasets `in_train_deit3b_-1_4_epochs.hdf5` and `in_val_deit3b_-1.hdf5` are in the `data` folder with the structure described in [Data folder structure](#data-folder-structure).
 
-To train the models from scratch instead of downloading them please run the following command (see ["Note about .csv files"](#note-about-.csv-files) for details):
+To train the models from scratch instead of downloading them please run the following command (see ["Note about stuned.run_from_csv.py and .csv files"](#note-about-stunedrun_from_csvpy-and-csv-files) for details):
 
 ```
-export ROOT=./ && export ENV=$ROOT/envs/diverse_universe && export PROJECT_ROOT_PROVIDED_FOR_STUNED=$ROOT && conda activate $ENV && python -m stuned.run_from_csv --conda_env $ENV --csv_path $ROOT/result_sheets/training.csv --run_locally
+export ROOT=./ && export ENV=$ROOT/envs/diverse_universe && export PROJECT_ROOT_PROVIDED_FOR_STUNED=$ROOT && conda activate $ENV && python -m stuned.run_from_csv --conda_env $ENV --csv_path $ROOT/result_sheets/training.csv --run_locally --n_groups 1
 ```
 
 Upon a successful scripts completion `result_sheets/training.csv` will look like `result_sheets/filled_training.csv`.
@@ -177,12 +178,12 @@ Upon a successful scripts completion `result_sheets/training.csv` will look like
 
 Make sure that models are in the folder `models/symlinked/` and have the structure described in ["Models folder structure"](#models-folder-structure).
 
-Make sure that cached datasets are in the folder `data/datasets/cached/` that has structure described in the section [Data folder structure](#data-folder-structure)
+Make sure that cached datasets are in the folder `data/datasets/cached/` that has structure described in the section [Data folder structure](#data-folder-structure) (file `in_train_deit3b_-1_4_epochs.hdf5` can be omitted as it is not used for evaluation).
 
-To evaluate the models run the command (see [Note about .csv files](#note-about-.csv-files) for details):
+To evaluate the models run the command (see ["Note about stuned.run_from_csv.py and .csv files"](#note-about-stunedrun_from_csvpy-and-csv-files) for details):
 
 ```
-export ROOT=./ && export ENV=$ROOT/envs/diverse_universe && export PROJECT_ROOT_PROVIDED_FOR_STUNED=$ROOT && conda activate $ENV && python -m stuned.run_from_csv --conda_env $ENV --csv_path $ROOT/result_sheets/evaluation.csv --run_locally
+export ROOT=./ && export ENV=$ROOT/envs/diverse_universe && export PROJECT_ROOT_PROVIDED_FOR_STUNED=$ROOT && conda activate $ENV && python -m stuned.run_from_csv --conda_env $ENV --csv_path $ROOT/result_sheets/evaluation.csv --run_locally --n_groups 1
 ```
 
 Upon a successful scripts completion `result_sheets/evaluation.csv` will look like `result_sheets/filled_evaluation.csv` and the file `result_pickles/eval_results.pkl` will be created.
@@ -193,37 +194,42 @@ To generate the final result tables please run the following command:
 python scripts/generate_result_tables.py
 ```
 
-Upon the script completion the the files `example_tables/ood_gen.csv` for OOD generalization and `example_tables/ood_det.csv` for OOD detection should look like `example_tables/filled_ood_gen.csv` and `example_tables/filled_ood_gen.csv` correspondingly. They will contain the following tables that mimic the results from the paper.
+Upon the script completion the the files `result_tables/ood_gen_df.csv` for OOD generalization and `result_tables/ood_det_df.csv` for OOD detection should look like `result_tables/filled_ood_gen_df.csv` and `result_tables/filled_ood_det_df.csv` correspondingly. They will contain the following tables that mimic the results from the paper.
 
-OOD generalization results (see rows for SED-A2D with 50 and 5 models correspondingly in the Table 1 in the paper):
+OOD generalization results for ensemble accuracy. They reproduce rows for SED-A2D with 50 and 5 models correspondingly in the Table 1 for ensemble accuracy in the paper:
 
 |              | in_val | imagenet_a | imagenet_r | C-1  | C-5  |
 |--------------|--------|------------|------------|------|------|
-| 50_models_   |   83.7 |       50.2 |       53.9 | 75.9 | 39.3 |
-| ood_gen_     |   85.3 |       42.2 |       47.9 | 77.3 | 40.7 |
+| 50_models_   |   83.6 |       **50.6** |       **53.8** | 75.8 | 39.3 |
+| ood_gen_     |   **85.3** |       43.0 |       48.7 | **77.3** | **40.7** |
 
-OOD detection results (see row SED-A2D for covariate and semantic shift columns correspondingly in the Table 3 in the paper):
+OOD detection AUROC results for PDS (called "div_continous_unique_per_sample" in code). They reproduce row SED-A2D for covariate and semantic shift columns correspondingly in the Table 3 in the paper:
 
-TODO(Alex | 18.09.2024): ??
+|              | C-1 | C-5 | iNaturalist | OpenImages  |
+|--------------|--------|------------|------------|------|
+| ood_det_cov_   |   **0.681** |      **0.894** |   0.932 |   0.912 |
+| ood_det_sem_   |   0.662 |   0.879 |   **0.977** |   **0.941** |
+
+Please note that results may differ depending on the [CUDA](https://developer.nvidia.com/cuda-toolkit) version, the results above are computed for CUDA 12.2.
 
 ## Cache datasets
 
 Make sure that folder does not already contain cached datasets you want to cache (otherwise the existing cached datasets will be reused and no new cached datasets will be generated).
 
-To cache the datasets run the following command (see ["Note about .csv files"](#note-about-.csv-files) for details):
+To cache the datasets run the following command (see ["Note about stuned.run_from_csv.py and .csv files"](#note-about-stunedrun_from_csvpy-and-csv-files) for details):
 
 ```
-export ROOT=./ && export ENV=$ROOT/envs/diverse_universe && export PROJECT_ROOT_PROVIDED_FOR_STUNED=$ROOT && conda activate $ENV && python -m stuned.run_from_csv --conda_env $ENV --csv_path $ROOT/result_sheets/caching.csv --run_locally
+export ROOT=./ && export ENV=$ROOT/envs/diverse_universe && export PROJECT_ROOT_PROVIDED_FOR_STUNED=$ROOT && conda activate $ENV && python -m stuned.run_from_csv --conda_env $ENV --csv_path $ROOT/result_sheets/caching.csv --run_locally --n_groups 1
 ```
-
+This command will automatically download iNaturalist (3.7GB) and OpenImages (5.5GB) datasets as described [here](https://github.com/haoqiwang/vim?tab=readme-ov-file).
 Upon a successful script completion `result_sheets/caching.csv` will look like `result_sheets/filled_caching.csv`.
 
-## Note about .csv files
+## Note about stuned.run_from_csv.py and .csv files
 
 .csv files are created for compact scripts running and logs recording using separate repository ["STAI-tuned"](https://github.com/AlexanderRubinstein/STAI-tuned). To run the scrips from the .csv file it should be submitted by the commands specified in the relevant sections, such as e.g:
 
 ```
-export ROOT=./ && export ENV=$ROOT/envs/diverse_universe && export PROJECT_ROOT_PROVIDED_FOR_STUNED=$ROOT && conda activate $ENV && python -m stuned.run_from_csv --conda_env $ENV --csv_path $ROOT/result_sheets/evaluation.csv --run_locally
+export ROOT=./ && export ENV=$ROOT/envs/diverse_universe && export PROJECT_ROOT_PROVIDED_FOR_STUNED=$ROOT && conda activate $ENV && python -m stuned.run_from_csv --conda_env $ENV --csv_path $ROOT/result_sheets/evaluation.csv --run_locally --n_groups 1
 ```
 
 ### .csv file structure
@@ -231,6 +237,10 @@ export ROOT=./ && export ENV=$ROOT/envs/diverse_universe && export PROJECT_ROOT_
 - Each line of a .csv file corresponds to one run of the script written in the column "path_to_main".
 - The script from the "path_to_main" column is parametrized by the config file specified in the column "path_to_default_config".
 - The config from the "path_to_default_config" column is modified by the columns that start with keyword "delta:<...>".
+
+### "n_groups" argument
+
+`--n_groups k` means that `k` lines will be running at a time.
 
 ### logs
 
