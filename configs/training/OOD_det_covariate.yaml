@@ -93,17 +93,17 @@ statistics:
   batchwise: false
   keep_modelwise: false
   use_tb: false
-  use_wandb: true
-  wandb:
-    netrc_path: ~/.netrc
-    stats:
-      input: false
-      logits: false
-      loss: true
-      metrics: true
-      prediction: false
-      target: false
-    wandb_init_kwargs:
-      tags:
-      - budget_loss_stronger_hp
+  use_wandb: false
+  # wandb:
+  #   netrc_path: ~/.netrc
+  #   stats:
+  #     input: false
+  #     logits: false
+  #     loss: true
+  #     metrics: true
+  #     prediction: false
+  #     target: false
+  #   wandb_init_kwargs:
+  #     tags:
+  #     - budget_loss_stronger_hp
 use_hardcoded_config: false

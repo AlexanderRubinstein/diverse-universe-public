@@ -156,7 +156,7 @@ models:
 
     total_groups: 4
 
-    ood_gen2:
+    ood_gen:
         fields: null
         model_group_prefix: ood_gen_
         model_paths: "./models/symlinked/ood_gen.pkl"
