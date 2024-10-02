@@ -1,10 +1,10 @@
-# Scalable Ensemble Diversification for OOD Generalization and Detection
+# Paper implementation
 
 ## Overview
 
 ![Scalable Ensemble Diversification for OOD Generalization and Detection](./figures/teaser.png "Scalable Ensemble Diversification for OOD Generalization and Detection")
 
-This is an implementation of the paper "Scalable Ensemble Diversification for OOD Generalization and Detection".
+This is an implementation of the paper.
 
 In the section ["Installation"](#installation) we explain how to create a conda environment with all the necessary libraries. The sections ["Download datasets"](#download-datasets) and ["Download models"](#download-models) describe how to download datasets and models correspondingly. The section ["Evaluate models"](#evaluate-models) explains how to evaluate the models and reproduce the results reported in the paper. The section ["Train models"](#train-models) explains how to train models from scratch without downloading them. The section ["Cache datasets"](#cache-datasets) describes how to cache datasets from scratch without downloading cached datasets. The section ["Note about stuned.run_from_csv.py and .csv files"](#note-about-stunedrun_from_csvpy-and-csv-files) gives additional information about the scripts running pipeline we use in this repository.
 
