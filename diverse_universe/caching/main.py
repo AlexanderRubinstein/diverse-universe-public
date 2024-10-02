@@ -1,34 +1,14 @@
-# from torch.utils.data import DataLoader
 import argparse
-# import pickle
-# from torchvision.datasets import ImageFolder
 import os
 import sys
 from tqdm import tqdm
-# from stuned.utility.utils import (
-#     get_project_root_path
-# )
 import h5py
 import numpy as np
 import torch
-# from stuned.utility.utils import (
-#     raise_unknown,
-#     get_hash,
-#     get_with_assert,
-#     remove_file_or_folder,
-#     apply_random_seed,
-#     # runcmd,
-#     log_or_print
-#     # parse_list_from_string
-# )
-# from stuned.utility.logger import make_logger
 
 
 # local imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-# import densifier
-# from densifier.datasets.tardataset import TarDataset
-# from densifier.get_segments.run_cropformer import EntityNetV2
 from diverse_universe.local_datasets.common import (
     make_dataloaders
 )
@@ -43,17 +23,12 @@ from diverse_universe.local_datasets.from_h5 import (
 from diverse_universe.local_datasets.easy_robust import (
     download_in_a,
     download_in_r,
-    # download_oi,
-    # get_imagenet_arv2_dataloader
     get_easy_robust_dataloaders
 )
 from diverse_universe.local_datasets.openimages import (
     get_openimages_dataloader,
     download_oi
 )
-# from diverse_universe.local_datasets.from_folder import (
-#     get_from_folder_dataloader
-# )
 from diverse_universe.local_datasets.inaturalist import (
     download_inat,
     get_inat_dataloader
@@ -63,9 +38,6 @@ from diverse_universe.local_datasets.imagenet_c import (
     IN_C_URL,
     get_imagenet_c_dataloaders
 )
-# from diverse_universe.local_datasets.utils import (
-#     download_tar_from_gdrive
-# )
 sys.path.pop(0)
 
 
@@ -75,27 +47,12 @@ from stuned.utility.utils import (
     get_with_assert,
     remove_file_or_folder,
     apply_random_seed,
-    # runcmd,
     log_or_print
-    # parse_list_from_string
 )
 from stuned.utility.logger import make_logger
 from stuned.local_datasets.transforms import (
     make_default_test_transforms_imagenet
 )
-
-
-# def pop_arg_from_opts(args, arg_name):
-#     cutoff_i = None
-#     output = None
-#     for i in range(len(args.opts)):
-#         if args.opts[i] == arg_name:
-#             output = args.opts[i+1]
-#             cutoff_i = i
-#             break
-#     assert cutoff_i is not None
-#     args.opts = args.opts[:cutoff_i] + args.opts[cutoff_i+2:]
-#     return output
 
 
 def get_parser():
@@ -130,50 +87,7 @@ def get_parser():
         help="How many epochs to cache (makes sense for random augmentations)",
         type=int
     )
-    # parser.add_argument("--input", help="Path to a tar file")
-    # parser.add_argument("--range", help="Range of images to process", default=None)
-    # parser.add_argument("--output", help="A directory to save output predictions dump.")
-    # parser.add_argument("--confidence-threshold",type=float,default=0.5,help="Minimum score for instance predictions to be shown")
-    # parser.add_argument(
-    #     "--opts",
-    #     help="Modify config options using the command-line 'KEY VALUE' pairs",
-    #     default=[],
-    #     nargs=argparse.REMAINDER)
     return parser
-
-    # ??
-
-    # if args.output is None:
-    #     args.output = pop_arg_from_opts(args, "--output")
-
-    # if args.range is None:
-    #     args.range = pop_arg_from_opts(args, "--range")
-
-    # print("Arguments: " + str(args))
-
-    # # Load Dataset
-    # input_path = args.input
-    # if input_path.endswith('.tar') or input_path.endswith('.tar.gz'):
-    #     dataset = TarDataset(input_path, transform=None)
-    # else:
-    #     dataset = ImageFolder(input_path, transform=None)
-    # if args.range is None:
-    #     images_range = None
-    # else:
-    #     # assert ":" == args.range[0]
-    #     # assert ":" == args.range[1]
-    #     # args.range = args.range[1:-1]
-    #     # images_range = parse_list_from_string(args.range, list_separators=":")
-    #     start, end = args.range.split(':')
-    #     images_range = [int(start), int(end)]
-
-    # # Extract Segments
-    # net = EntityNetV2(args)
-    # output = net.run(range=images_range)
-
-    # # Save Segments
-    # os.makedirs(os.path.dirname(args.output), exist_ok=True)
-    # pickle.dump(output, open(args.output, 'wb'))
 
 
 def empty_path(path):
@@ -188,33 +102,7 @@ def make_in_c_dataloaders(
     num_workers=4,
     logger=None
 ):
-    # imagenet_c_config = {
-    #     "type": "easy_robust",
-    #     'easy_robust': {
-    #         "dataset_types": ["imagenet_c"],
-    #         # "data_dir": "./tmp/imagenet-a.tar.gz"
-    #         "data_dir": "/mnt/qb/work/oh/arubinstein17/cache/ImageNet-C/imagenet-c",
-    #         # "inc_types": ["Fog"]
-    #         # "inc_types": None
-    #         "inc_types": [
-    #             'Brightness',
-    #             'Contrast',
-    #             'Defocus Blur',
-    #             'Elastic Transform',
-    #             'Fog',
-    #             'Frost',
-    #             'Gaussian Noise',
-    #             'Glass Blur',
-    #             'Impulse Noise',
-    #             'JPEG Compression',
-    #             'Motion Blur',
-    #             'Pixelate',
-    #             'Shot Noise',
-    #             'Snow',
-    #             'Zoom Blur',
-    #         ]
-    #     }
-    # }
+
     if empty_path(path):
         raise FileNotFoundError(
             f"ImageNet-C path {path} does not exist or is empty. "
@@ -223,38 +111,10 @@ def make_in_c_dataloaders(
         )
 
     in_c_config = {
-            # "data_dir": "/mnt/qb/work/oh/arubinstein17/cache/ImageNet-C/imagenet-c",
             "data_dir": path,
-            # "inc_types": ["Fog"]
-            # "inc_types": None
             "inc_types": corruption_types,
-            # [
-            #     'Brightness',
-            #     'Contrast',
-            #     'Defocus Blur',
-            #     'Elastic Transform',
-            #     'Fog',
-            #     'Frost',
-            #     'Gaussian Noise',
-            #     'Glass Blur',
-            #     'Impulse Noise',
-            #     'JPEG Compression',
-            #     'Motion Blur',
-            #     'Pixelate',
-            #     'Shot Noise',
-            #     'Snow',
-            #     'Zoom Blur',
-            # ]
     }
 
-# _, imagenet_c_dataloaders, _ = make_dataloaders(
-#     imagenet_c_config,
-#     train_batch_size=0,
-#     eval_batch_size=128,
-#     num_workers=4
-# )
-
-# imagenet_c_dataloaders = {key: value for key, value in imagenet_c_dataloaders.items() if ("1" in key or "5" in key)}
     imagenet_c_dataloaders = get_imagenet_c_dataloaders(
         eval_batch_size=batch_size,
         in_c_config=in_c_config,
@@ -265,41 +125,17 @@ def make_in_c_dataloaders(
     )
     return imagenet_c_dataloaders
 
-
-# ?? don't use as is for IN-C
-
 def make_inat_dataloader(path, batch_size=128, num_workers=4, logger=None):
-#                             inaturalist_config = {
-#     "type": "easy_robust",
-#     'easy_robust': {
-#         "dataset_types": ["from_folder"],
-#         "data_dir": "/mnt/qb/work/oh/arubinstein17/cache/iNaturalist/iNaturalist/",
-#         "dataset_name": "iNaturalist"
-#     }
-# }
 
-# _, easy_robust_dataloaders, _ = make_dataloaders(
-#     inaturalist_config,
-#     train_batch_size=0,
-#     eval_batch_size=128,
-#     num_workers=4
-# )
-# inat_dataloader = easy_robust_dataloaders["iNaturalist"]
-# if eval_transform is None:
-#     eval_transform = make_default_test_transforms_imagenet()d
     data_dir = os.path.join(path, "iNaturalist")
     download_if_not_exists(data_dir, download_inat)
     inat_config = {
-        # "dataset_types": ["from_folder"],
-        # "data_dir": "/mnt/qb/work/oh/arubinstein17/cache/iNaturalist/iNaturalist/",
-        # "data_dir": os.path.join(data_dir, "images"),
         "data_dir": data_dir,
         "dataset_name": "iNaturalist"
     }
     eval_transform = make_default_test_transforms_imagenet()
 
     inat_dataloader = get_inat_dataloader(
-        # train_batch_size,
         eval_batch_size=batch_size,
         inat_config=inat_config,
         num_workers=num_workers,
@@ -312,23 +148,13 @@ def make_inat_dataloader(path, batch_size=128, num_workers=4, logger=None):
 def make_oi_dataloader(path, batch_size=128, num_workers=4, logger=None):
 
     data_dir = os.path.join(path, "openimages")
-    # img_list = os.path.join(path, "openimage_o.txt")
-    # download_if_not_exists(data_dir, download_oi)
     download_if_not_exists(data_dir, download_oi)
-    # assert os.path.exists(img_list)
-    # list_path = os.path.join(path, "openimage_o.txt")
 
     openimages_config = {
-        # "type": "easy_robust",
-        # 'easy_robust': {
-        #     "dataset_types": ["openimages"],
-        #     "data_dir": data_dir,
-        #     "img_list": None
-        # }
         "data_dir": data_dir,
         "img_list": None
     }
-    # ??
+
     oi_dataloader = get_openimages_dataloader(
         eval_batch_size=batch_size,
         oi_config=openimages_config,
@@ -336,19 +162,12 @@ def make_oi_dataloader(path, batch_size=128, num_workers=4, logger=None):
         eval_transform=None,
         logger=logger
     )
-    # _, easy_robust_dataloaders, _ = make_dataloaders(
-    #     openimages_config,
-    #     train_batch_size=0,
-    #     eval_batch_size=128,
-    #     num_workers=4
-    # )
-    # openimages_dataloader = easy_robust_dataloaders["openimages"]
+
     return oi_dataloader
 
 
 def download_if_not_exists(data_dir, download_func):
     if empty_path(data_dir):
-        # os.makedirs(path, exist_ok=True)
         download_func(data_dir)
 
 
@@ -363,50 +182,19 @@ def make_in_ar_dataloader(
     if name == "in_a":
         dataset_type = "imagenet_a"
         download_func = download_in_a
-    # elif name == "openimages":
-    #     dataset_type = name
-    #     download_func = download_oi
     else:
         assert name == "in_r"
         dataset_type = "imagenet_r"
         download_func = download_in_r
 
     data_dir = os.path.join(path, dataset_type.replace("_", "-"))
-    # if not os.path.exists(expected_path) or len(os.listdir(expected_path)) == 0:
-    #     os.makedirs(path, exist_ok=True)
-    #     download_func(path)
     download_if_not_exists(data_dir, download_func)
 
-#     openimages_config = {
-#     "type": "easy_robust",
-#     'easy_robust': {
-#         "dataset_types": ["openimages"],
-#         "data_dir": "/mnt/qb/work/oh/arubinstein17/cache/OpenImage/test",
-#         "img_list": "/mnt/qb/work/oh/arubinstein17/cache/OpenImage/openimage_o.txt"
-#     }
-# }
-
-# _, easy_robust_dataloaders, _ = make_dataloaders(
-#     openimages_config,
-#     train_batch_size=0,
-#     eval_batch_size=128,
-#     num_workers=4
-# )
-# openimages_dataloader = easy_robust_dataloaders["openimages"]
-
     imagenet_a_config = {
-        # "type": "easy_robust",
-        # 'easy_robust': {
-        #     "dataset_types": [dataset_type],
-        #     # "data_dir": "./tmp/imagenet-a.tar.gz"
-        #     # "data_dir": "/mnt/lustre/work/oh/arubinstein17/cache/imagenet-a"
-        #     "data_dir": path
-        # }
         "dataset_types": [dataset_type],
         "data_dir": data_dir
     }
 
-    # _, easy_robust_dataloaders, _ = make_dataloaders( ??
     _, easy_robust_dataloaders = get_easy_robust_dataloaders(
         train_batch_size=0,
         eval_batch_size=batch_size,
@@ -440,20 +228,10 @@ def make_in_dataloaders(name, path, logger):
         "type": "imagenet1k",
         "imagenet1k": {
             "only_val": False,
-            # "hf_token_path": DEFAULT_HUGGING_FACE_ACCESS_TOKEN_PATH,
-            # "cache_dir": "./tmp/",
-            # "data_dir": None,
-            # "test_splits": ["val", "train"],
             "test_splits": ["val"],
             "train_split": "train",
-            # "train_split": "train",
-            # "path": "/mnt/beegfs/oh/datasets/ImageNet/ILSVRC/Data/CLS-LOC",
-            # "path": "/scratch_local/arubinstein17-51549/kaggle/input/imagenet-object-localization-challenge/ILSVRC/Data/CLS-LOC",
-            # "path": "/mnt/lustre/datasets/ImageNet2012",
             "path": path,
             "use_train_for_eval": False,
-            # "num_test_samples": 1000, # debug
-            # "num_train_samples": 1000, # debug
             "transforms": {
                 "transforms_list": [
                     "from_class-RRC",
@@ -543,24 +321,12 @@ def make_in_dataloaders(name, path, logger):
         num_workers=num_workers,
         to_train=True,
         logger=logger
-        # to_train=False
     )
-    # im_train_dataloader, im_val_dataloaders = get_imagenet_dataloaders(
-    #     train_batch_size,
-    #     eval_batch_size,
-    #     specific_dataset_config,
-    #     train_transform=transforms,
-    #     eval_transform=eval_transforms,
-    #     return_index=specific_dataset_config.get("return_index", False),
-    #     num_workers=num_readers
-    # )
     if name == "in_train":
         return im_train_dataloader
     else:
         assert name == "in_val"
         return im_val_dataloaders["val"]
-    # im_val_dataloader = im_val_dataloaders["val"]
-    # im_train_dataloader = im_val_dataloaders["train"]
 
 
 def prepare_model_config(name, path):
@@ -607,15 +373,10 @@ def save_activations(
 
     if isinstance(dataset, torch.utils.data.DataLoader):
         dataset = dataset.dataset
-        # assert batch_size == dataloader.batch_size
-    # else:
-    # device = torch.device("cuda:0")
 
     model = build_model(model_config)
 
     model_type = get_with_assert(model_config, "type")
-
-    # dataset_type = get_with_assert(dataset_config, "type")
 
     model.eval()
 
@@ -626,16 +387,14 @@ def save_activations(
 
     model.to(device)
 
-    # input_0, _ = dataset[0]
     dataset_item = dataset[0]
-    # print(dataset_item)  # debug
+
     if collate_fn is None:
         input_0 = dataset_item[0].unsqueeze(0)
     else:
         input_0 = collate_fn([dataset_item])
-        # print(input_0)  # debug
         input_0 = input_0[0]
-        # print(input_0.shape)  # debug
+
     embed_shape = model(input_0.to(device)).shape[-1]
 
     if total_samples == 0:
@@ -671,9 +430,6 @@ def save_activations(
         overwrite = False
         try:
             with h5py.File(cache_file_path, 'r') as hdf5_file:
-                # print(hdf5_file.keys())
-                # print(hdf5_file)
-                # assert False
                 if "embed" not in hdf5_file or np.array(hdf5_file["embed"])[-1].sum() == 0:
                     overwrite = True
         except (BlockingIOError, OSError):
@@ -695,24 +451,18 @@ def save_activations(
                 logger
             )
             return cache_file_path
-            # os.remove(cache_file_path)
-            # print(f"File {cache_file_path} already exists")
 
     samples_after_repetition = total_samples * n_epochs
 
     os.makedirs(os.path.dirname(cache_file_path), exist_ok=True)
 
-    # assert not hasattr(dataset, "dataset"), "dataset should not be a Subset"
     if hasattr(dataset, "dataset"):
         log_or_print("Dataset is a Subset", logger)
 
     start_index = 0
 
     apply_random_seed(random_seed)
-    # if isinstance(dataset, torch.utils.data.DataLoader):
-    #     dataloader = dataset
-    #     assert batch_size == dataloader.batch_size
-    # else:
+
     dataloader = torch.utils.data.DataLoader(
         dataset,
         batch_size=batch_size,
@@ -720,12 +470,6 @@ def save_activations(
         num_workers=num_workers,
         collate_fn=collate_fn
     )
-
-    # if wrap is not None:
-    # if wrap == "mvh":
-    #     dataloader = wrap_mvh_dataloader(dataloader)
-    # else:
-    #     assert wrap is None, "wrap should be None, 'mvh' or 'none'"
 
     with h5py.File(cache_file_path, 'w') as hdf5_file:
         hdf5_file.create_dataset(
@@ -745,13 +489,6 @@ def save_activations(
         )
 
         for j in range(n_epochs):
-            # apply_random_seed(j)
-            # dataloader = torch.utils.data.DataLoader(
-            #     dataset,
-            #     batch_size=batch_size,
-            #     shuffle=False,
-            #     num_workers=num_workers
-            # )
 
             for i, dataloader_item in tqdm(enumerate(dataloader)):
                 input, target = dataloader_item[0], dataloader_item[1]
@@ -827,11 +564,9 @@ def cache_dataloaders(
 
 
 def main():
-    # Loaded Arguments
+
     args = get_parser().parse_args()
     logger = make_logger()
-
-    # print(args) # tmp
 
     dataset_name = args.original_dataset_name
     dataloader = prepare_dataloaders(
@@ -852,33 +587,15 @@ def main():
     )
 
     cache_dataloaders(
-        # {
-        #     "iNaturalist": inat_dataloader,
-        #     "openimages": openimages_dataloader,
-        #     # "im_train_dataloader": im_train_dataloader,
-        #     # "im_val_dataloader": im_val_dataloader
-        # }
-        #     # | imagenet_c_dataloaders
-        #     | all_dataloaders_dict,
         dataloaders_dict,
-        # tmp_dict,
-        # VAL_DATASETS_CACHE,
-        # ?? cache path
         args.cache_save_path,
         model_config,
         block_id=int(args.layer_cutoff),
         use_path_as_is=use_path_as_is,
         n_epochs=args.n_epochs,
         logger=logger
-        # custom_prefix="deit3_2layer_straight_order"
     )
 
 
 if __name__ == "__main__":
-    # # Loaded Arguments
-    # args = get_parser().parse_args()
-
-    # print(args) # tmp
-
-    # prepare_dataloaders(args.original_dataset_name, args.original_dataset_path)
     main()

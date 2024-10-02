@@ -96,8 +96,6 @@ cached_datasets_info:
         imagenet_a: ina
         imagenet_r: inr
     path_mapping:
-        # in_val: /mnt/qb/work/oh/arubinstein17/cache/ImageNet1k/val_cache/ed4f10f4ddeb07f1d876_torch_load_block_-1_model_imagenet1k_dataset_1_epochs_50000_samples.hdf5
-        # in_val
         in_val: ./data/datasets/cached/in_val_deit3b_-1.hdf5
         # in_cs
         snow_5: ./data/datasets/cached/Snow_5/f245dd6976ed846f2e98_torch_load_block_-1_model_Snow_5_dataset_1_epochs_50000_samples.hdf5
@@ -136,22 +134,7 @@ cached_datasets_info:
         # datasets for ood generalization
         imagenet_a: ./data/datasets/cached/in_a_deit3b_-1_.hdf5
         imagenet_r: ./data/datasets/cached/in_r_deit3b_-1_.hdf5
-        # mixed_rand: [/mnt/qb/work/oh/arubinstein17/cache/val_datasets/mixed_rand/bf802cc68d4a8b524c38_torch_load_block_-1_model_mixed_rand_dataset_1_epochs_4050_samples.hdf5, "IN9"]
-        # mixed_same: [/mnt/qb/work/oh/arubinstein17/cache/val_datasets/mixed_same/03839176c08efd3bf9e0_torch_load_block_-1_model_mixed_same_dataset_1_epochs_4050_samples.hdf5, "IN9"]
-        # only_bg_t: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/only_bg_t/82c8996731b022fe6a5f_torch_load_block_-1_model_only_bg_t_dataset_1_epochs_4050_samples.hdf5
-        # no_fg: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/no_fg/5cc8e5036cec4c12a397_torch_load_block_-1_model_no_fg_dataset_1_epochs_4050_samples.hdf5
-        # mixed_next: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/mixed_next/0cbfd71928f9d1f69cd2_torch_load_block_-1_model_mixed_next_dataset_1_epochs_4050_samples.hdf5
-        # only_fg: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/only_fg/3de26782660a000fb937_torch_load_block_-1_model_only_fg_dataset_1_epochs_4050_samples.hdf5
-        # original: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/original/d5967a112b317104ccb5_torch_load_block_-1_model_original_dataset_1_epochs_4050_samples.hdf5
-        # only_bg_b: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/only_bg_b/b2005edd362a19e1ae41_torch_load_block_-1_model_only_bg_b_dataset_1_epochs_4050_samples.hdf5
-        # stylized: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/stylized/6a559f1b1becae879c79_torch_load_block_-1_model_stylized_dataset_1_epochs_800_samples.hdf5
-        # sketch: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/sketch/ff0161b6b924453b0c68_torch_load_block_-1_model_sketch_dataset_1_epochs_800_samples.hdf5
-        # edge: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/edge/7f7ea165dfb604e47f3c_torch_load_block_-1_model_edge_dataset_1_epochs_160_samples.hdf5
-        # silhouette: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/silhouette/9def5ec3aecf90d0515c_torch_load_block_-1_model_silhouette_dataset_1_epochs_160_samples.hdf5
-        # cue-conflict: /mnt/qb/work/oh/arubinstein17/cache/val_datasets/cue-conflict/5f1aa995aa7afccf46e8_torch_load_block_-1_model_cue-conflict_dataset_1_epochs_1280_samples.hdf5
 
-    # base_path: "/mnt/qb/work/oh/arubinstein17/cache/val_datasets/"
-    # filename_substring: "torch_load_block_-1_model"
 models:
 
     total_groups: 4

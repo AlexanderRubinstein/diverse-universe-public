@@ -17,33 +17,10 @@ data:
                 train: 5124668
         type: from_h5
         use_train_for_eval: false
-        waterbirds:
-            fraction: 1
-            keep_metadata: false
-            root_dir: /mnt/lustre/work/oh/arubinstein17/github/diverse-universe/tmp/DisEnsembler/<p>
+
     num_data_readers: 0
     unlabeled_dataset: null
-# logging:
-#     use_tb: false
-#     use_wandb: false
-#     wandb:
-#         netrc_path: /home/oh/arubinstein17/.netrc
-#         stats:
-#             input: false
-#             logits: false
-#             loss: true
-#             metrics: true
-#             prediction: false
-#             target: false
-#         wandb_init_kwargs:
-#             tags:
-#                 - budget_train
-#     output_csv:
-#         path: /home/oh/arubinstein17/github/frozen-diverse-universe/experiments/Ultimate2604/2024-05-21_19:46:59.187320---fd723661c4d0f03bffad---217009/local_copy_Ultimate2604.csv
-#         row_number: 530
-#         spreadsheet_url: https://docs.google.com/spreadsheets/d/1AlsmgL6JmD0xkt7kYzwosF4XQ4XceB2zF4xv23f81IA/edit
-#         worksheet_name: Ultimate2604
-#     gdrive_storage_folder: https://drive.google.com/drive/folders/1bCKbgY29CXsgYSwBHk49weolkA5cBePT?usp=share_link
+
 model:
     redneck_ensemble:
         base_estimator:
@@ -110,7 +87,7 @@ statistics:
     use_tb: false
     use_wandb: false
     wandb:
-        netrc_path: /home/oh/arubinstein17/.netrc
+        netrc_path: ~/.netrc
         stats:
             input: false
             logits: false
